@@ -1,0 +1,13 @@
+[user]
+    name = sukenori
+    email = sukenori@coo.net
+[credential]
+    # Windows側のGit Credential ManagerをWSLから呼び出すための魔法の1行
+    helper = /mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe
+[init]
+    # 新規リポジトリ作成時のデフォルトブランチ名をmainにする
+    defaultBranch = main
+[core]
+    # Gitの標準エディタをNeovimにする
+    editor = nvim
+

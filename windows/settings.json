@@ -1,0 +1,23 @@
+{
+  "defaultProfile": "Ubuntu",
+  "launchMode": "maximized",
+  "profiles": {
+    "defaults": {
+      "font": {
+        "face": "HackGen Console NF",
+        "size": 12
+      },
+      "colorScheme": "One Half Dark",
+      "cursorShape": "filledBox",
+      "bellStyle": "none"
+    },
+    "list": [
+      {
+        "name": "Ubuntu",
+        "source": "Windows.Terminal.Wsl",
+        "startingDirectory": "\\\\wsl.localhost\\Ubuntu\\home\\sukenori"
+      }
+    ]
+  }
+}
+
