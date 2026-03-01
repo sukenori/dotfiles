@@ -31,5 +31,20 @@ ln -sf ~/dotfiles/nvim ~/.config/nvim
 # 5. デフォルトシェルの変更
 sudo chsh -s $(which zsh) $USER
 
+# 1. 競プロ環境のベース（atcoder-nim-env）
+if [ ! -d "$HOME/atcoder-nim-env" ]; then
+  git clone https://github.com/sukenori/AtCoder-Nim-Codespace.git ~/atcoder-nim-env
+fi
+
+# 2. 自作ライブラリ（nim-libraryとしてクローン）
+if [ ! -d "$HOME/nim-library" ]; then
+  git clone https://github.com/sukenori/Competitive_Programming_Library-Nim.git ~/nim-library
+fi
+
+# 3. 過去の解答コード（solved-codeとしてクローン）
+if [ ! -d "$HOME/solved-code" ]; then
+  git clone https://github.com/sukenori/Competitive_Programming-Solved_Code.git ~/solved-code
+fi
+
 echo "WSLのセットアップとdotfilesの展開が完了しました。ターミナルを再起動してください。"
 
