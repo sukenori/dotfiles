@@ -18,17 +18,4 @@ source ~/.zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 # コマンドの文法チェック（正しければ緑、間違っていれば赤）
 source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
-function cnim() {
-  # プロジェクトのディレクトリに移動
-  cd ~/atcoder-nim-env
-
-  # コンテナ "atcoder-nim" が実行中(running)かどうか確認
-  if [ "$(docker inspect -f '{{.State.Running}}' atcoder-nim 2>/dev/null)" != "true" ]; then
-    echo "コンテナが起動していません。起動します..."
-    docker compose up -d
-  fi
-
-  # コンテナの中に入る
-  echo "Nim環境に入ります..."
-  docker exec -it atcoder-nim bash
 }
