@@ -19,15 +19,26 @@ vim.opt.mouse = "a"
 -- <Leader>c: 単純コンパイル (Compile)
 vim.api.nvim_set_keymap('n', '<Leader>c', ':!make -C .. build FILE=work/%<CR>', { noremap = true, silent = false })
 
--- <Leader>b: バンドルのみ実行 (Bundle)
-vim.api.nvim_set_keymap('n', '<Leader>b', ':!make -C .. bundle FILE=work/%<CR>', { noremap = true, silent = false })
+-- <Leader>b: バンドルを実行し、結果をクリップボードにコピー
+vim.keymap.set('n', '<Leader>b', function()
+  vim.cmd('!make -C .. bundle FILE=work/' .. vim.fn.expand('%'))
+  
+  -- Neovimから見て一つ上の階層を指定
+  local target_file = '../bundled.txt'
+  
+  -- バンドル失敗時のエラー落ちを防ぐためのチェック
+  if vim.fn.filereadable(target_file) == 1 then
+    local lines = vim.fn.readfile(target_file)
+    vim.fn.setreg('+', table.concat(lines, '\n') .. '\n')
+    print('バンドル結果をクリップボードにコピーしました')
+  else
+    print('エラー: ' .. target_file .. ' が見つかりません。バンドルが失敗した可能性があります')
+  end
+end, { noremap = true, silent = true })
 
 -- <Leader>s: ファイル名類推でテスト・提出 (Submit)
 vim.api.nvim_set_keymap('n', '<Leader>s', ':!make -C .. submit-auto FILE=work/%<CR>', { noremap = true, silent = false })
 
 -- <Leader>u: クリップボードのURLでテスト・提出 (Url)
 vim.api.nvim_set_keymap('n', '<Leader>u', ':!make -C .. submit-url FILE=work/% URL=<C-r>+<CR>', { noremap = true, silent = false })
-
--- <Leader>a: 机の上の片付け (Archive)
-vim.api.nvim_set_keymap('n', '<Leader>a', ':!make -C .. archive<CR>', { noremap = true, silent = false })
 

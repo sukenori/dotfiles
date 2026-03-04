@@ -18,4 +18,6 @@ source ~/.zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 # コマンドの文法チェック（正しければ緑、間違っていれば赤）
 source ~/.zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+alias archive='make -C /workspace/env archive'
+
 }
