@@ -5,7 +5,8 @@ winget install --id Git.Git  --exact --silent --accept-source-agreements --accep
 winget install --id Docker.DockerDesktop  --exact --silent --accept-source-agreements --accept-package-agreements
 winget install --id Brave.Brave  --exact --silent --accept-source-agreements --accept-package-agreements
 winget install --id Google.QuickShare  --exact --silent --accept-source-agreements --accept-package-agreements
-winget install --id XPFFZHVGQWWLHB  --exact --silent --accept-source-agreements --accept-package-agreements
+winget install --id Microsoft.OneNote  --exact --silent --accept-source-agreements --accept-package-agreements
+winget install --id 9MVLWT5DMSKR  --exact --silent --accept-source-agreements --accept-package-agreements
 
 # Windows Terminalの設定ファイルの保存先パスを定義
 $TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
