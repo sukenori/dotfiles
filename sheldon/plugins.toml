@@ -1,0 +1,11 @@
+shell = "zsh"
+
+[plugins.pure]
+github = "sindresorhus/pure"
+apply = ["fpath"]
+
+[plugins.zsh-syntax-highlighting]
+github = "zsh-users/zsh-syntax-highlighting"
+
+<RightMouse>[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
