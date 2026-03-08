@@ -28,11 +28,18 @@ if [ ! -d "$HOME/dotfiles" ]; then
 fi
 
 echo "=== 6. Symlinks ==="
-mkdir -p "$HOME/.config/sheldon" "$HOME/.config/nvim"
+# nvimの実体ディレクトリは作らず、.config と sheldonフォルダだけ作る
+mkdir -p "$HOME/.config/sheldon"
+mkdir -p "$HOME/.local/bin" # 今回LSPを置く場所も作っておく
+
 ln -sf "$HOME/dotfiles/zsh/.zshrc" "$HOME/.zshrc"
 ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
 ln -sf "$HOME/dotfiles/sheldon/plugins.toml" "$HOME/.config/sheldon/plugins.toml"
-ln -sf "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
+
+# nvimディレクトリが既にあれば削除し、フォルダごとリンクする
+rm -rf "$HOME/.config/nvim"
+ln -s "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
+
 ln -sf "$HOME/dotfiles/tmux/.tmux.conf" "$HOME/.tmux.conf"
 chmod +x "$HOME/dotfiles/tmux/start-main.sh" || true
 

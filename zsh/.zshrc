@@ -19,6 +19,7 @@ source /usr/share/doc/fzf/examples/key-bindings.zsh 2>/dev/null || true
 export FZF_CTRL_T_COMMAND='find . -name ".git" -prune -o -print'
 
 # パスの設定 (Cargoのパスも追加しておくことでRustツールが確実に動きます)
+export PATH="$HOME/.local/bin:$PATH"
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 # sheldonとzoxideの読み込み

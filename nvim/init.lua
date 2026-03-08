@@ -147,7 +147,7 @@ require("lazy").setup({
       vim.lsp.config('nim_langserver', {
         -- cmdを「docker exec」に変更し、-i (インタラクティブ) オプションで標準入出力を繋ぐ
         -- ※ -t (tty) はLSPの通信プロトコルを壊すので絶対に入れないでください
-        cmd = { "docker", "exec", "-i", "atcoder-nim", "nimlangserver" },
+        cmd = { "nimlangserver" },
         filetypes = { "nim" },
         -- ワークスペースの判定基準
         root_markers = { "nim.cfg", ".git" },
