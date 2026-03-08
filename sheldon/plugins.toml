@@ -7,5 +7,5 @@ apply = ["fpath"]
 [plugins.zsh-syntax-highlighting]
 github = "zsh-users/zsh-syntax-highlighting"
 
-<RightMouse>[plugins.zsh-autosuggestions]
+[plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
