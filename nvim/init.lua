@@ -144,16 +144,10 @@ require("lazy").setup({
     config = function()
       -- 新しいLSP APIでの設定 (v0.11以降)
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      vim.lsp.config('nim_langserver', {
-        -- cmdを「docker exec」に変更し、-i (インタラクティブ) オプションで標準入出力を繋ぐ
-        -- ※ -t (tty) はLSPの通信プロトコルを壊すので絶対に入れないでください
+      require('lspconfig').nim_ls.setup({
         cmd = { "nimlangserver" },
-        filetypes = { "nim" },
-        -- ワークスペースの判定基準
-        root_markers = { "nim.cfg", ".git" },
         capabilities = capabilities,
       })
-      vim.lsp.enable('nim_langserver')
       
       -- 補完ポップアップの設定
       local cmp = require('cmp')
