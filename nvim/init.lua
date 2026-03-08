@@ -26,15 +26,6 @@ vim.opt.rtp:prepend(lazypath)
 local term_buf = nil
 local term_chan = nil
 
--- 下部に分割してターミナルを開く関数
-local function init_terminal()
-  vim.cmd('botright 15split | terminal')
-  term_buf = vim.api.nvim_get_current_buf()
-  term_chan = vim.b.terminal_job_id
-  vim.cmd('setlocal nonumber norelativenumber signcolumn=no')
-  vim.cmd('wincmd p') -- カーソルを上のコード画面に戻す
-end
-
 -- Neovim起動時に自動でターミナルを開く
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function() init_terminal() end
