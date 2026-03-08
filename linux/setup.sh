@@ -1,63 +1,70 @@
 #!/bin/bash
-set -e
+set -euo pipefail
 
-# 改行コード問題（\rエラー）を自己修復する安全装置
-sed -i 's/\r$//' "$0"
+# 1) Windows改行(CRLF)で /bin/bash^M になる事故を自己修復
+sed -i 's/\r$//' "$0" || true
 
-echo "=== 1. ホスト(WSL)の必須パッケージインストール ==="
+echo "=== 1. apt packages ==="
 sudo apt update && sudo apt upgrade -y
-sudo apt install -y curl git neovim zsh ripgrep fzf openssh-server podman distrobox build-essential libssl-dev pkg-config
+sudo apt install -y \
+  curl git neovim zsh ripgrep fzf tmux \
+  openssh-client \
+  podman distrobox build-essential libssl-dev pkg-config
 
-echo "=== 2. Node.js と npm の確実なインストール ==="
+echo "=== 2. Node.js (for tools) ==="
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 
-echo "=== 3. Zellij のインストール ==="
-curl -L https://github.com/zellij-org/zellij/releases/latest/download/zellij-x86_64-unknown-linux-musl.tar.gz | tar xz
-sudo mv zellij /usr/local/bin/
-
-echo "=== 4. Rust, Cargo, Sheldon, Zoxide のインストール ==="
+echo "=== 3. Rust/Cargo + sheldon + zoxide ==="
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-source $HOME/.cargo/env
+# shellcheck disable=SC1091
+source "$HOME/.cargo/env"
 cargo install sheldon
 cargo install zoxide --locked
 
-echo "=== 5. pure-prompt のインストール ==="
+echo "=== 4. pure-prompt ==="
 sudo npm install --global pure-prompt
 
-echo "=== 6. dotfiles のクローンとシンボリックリンク作成 ==="
+echo "=== 5. Clone dotfiles ==="
 if [ ! -d "$HOME/dotfiles" ]; then
-  git clone https://github.com/sukenori/dotfiles.git ~/dotfiles
+  git clone https://github.com/sukenori/dotfiles.git "$HOME/dotfiles"
 fi
 
-mkdir -p ~/.config/sheldon ~/.config/zellij/layouts ~/.config/nvim
-ln -sf ~/dotfiles/zsh/.zshrc ~/.zshrc
-ln -sf ~/dotfiles/git/.gitconfig ~/.gitconfig
-ln -sf ~/dotfiles/sheldon/plugins.toml ~/.config/sheldon/plugins.toml
-ln -sf ~/dotfiles/zellij/layouts/default.kdl ~/.config/zellij/layouts/default.kdl
-ln -sf ~/dotfiles/nvim ~/.config/nvim
+echo "=== 6. Symlinks ==="
+mkdir -p "$HOME/.config/sheldon" "$HOME/.config/nvim"
+ln -sf "$HOME/dotfiles/zsh/.zshrc" "$HOME/.zshrc"
+ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
+ln -sf "$HOME/dotfiles/sheldon/plugins.toml" "$HOME/.config/sheldon/plugins.toml"
+ln -sf "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
+ln -sf "$HOME/dotfiles/tmux/.tmux.conf" "$HOME/.tmux.conf"
+chmod +x "$HOME/dotfiles/tmux/start-main.sh" || true
 
-# SSH接続用にリモートURLを変更
-cd ~/dotfiles && git remote set-url origin git@github.com:sukenori/dotfiles.git && cd ~
-
-echo "=== 7. SSHサーバーの設定 (外部アクセス用) ==="
-sudo cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak
-sudo sed -i 's/^#Port 22/Port 22/' /etc/ssh/sshd_config
-sudo sed -i 's/^#PubkeyAuthentication yes/PubkeyAuthentication yes/' /etc/ssh/sshd_config
-sudo sed -i 's/^#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sudo service ssh restart
-
-echo "=== 8. GitHub用のSSH鍵生成 ==="
-if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
-  ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
-  echo "鍵を生成しました。以下の公開鍵をGitHubに登録してください："
-  echo "---------------------------------------------------"
-  cat ~/.ssh/id_ed25519.pub
-  echo "---------------------------------------------------"
+echo "=== 7. Disable zellij autostart (if exists) and enable tmux autostart ==="
+# 既に ~/.zshrc に zellij 起動行があれば無効化（保険）
+if grep -q "zellij" "$HOME/.zshrc"; then
+  sed -i 's/^\(.*zellij.*\)$/# disabled-by-setup: \1/' "$HOME/.zshrc" || true
 fi
 
-echo "=== 9. デフォルトシェルの変更 ==="
-sudo chsh -s $(which zsh) $USER
+# tmux自動起動ブロックを末尾に追記（重複追記しない）
+if ! grep -q "tmux-start-main-sh" "$HOME/.zshrc"; then
+  cat >> "$HOME/.zshrc" <<'EOF'
 
-echo "=== WSLインフラのセットアップが完了しました。 ==="
+# tmux-start-main-sh
+# interactive shell で tmux 未接続なら main を起動/復帰
+if command -v tmux >/dev/null 2>&1; then
+  if [ -z "${TMUX:-}" ] && [ -n "${PS1:-}" ]; then
+    exec "$HOME/dotfiles/tmux/start-main.sh"
+  fi
+fi
+EOF
+fi
+
+echo "=== 8. Git CRLF safety ==="
+git config --global core.autocrlf false || true
+
+echo "=== 9. Default shell to zsh ==="
+sudo chsh -s "$(which zsh)" "$USER" || true
+echo "=== Install Tailscale ==="
+curl -fsSL https://tailscale.com/install.sh | sh
+echo "=== DONE ==="
+echo "Next: Android側でTermuxのsshdを起動し、WSLから ssh -p 8022 で接続します。"
