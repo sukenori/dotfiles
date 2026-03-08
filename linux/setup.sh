@@ -3,10 +3,21 @@ set -euo pipefail
 
 echo "=== 1. apt packages ==="
 sudo apt update && sudo apt upgrade -y
+# neovimをaptリストから削除し、他の必須パッケージをインストール
 sudo apt install -y \
-  curl git neovim zsh ripgrep fzf tmux \
+  curl git zsh ripgrep fzf tmux \
   openssh-client \
   podman distrobox build-essential libssl-dev pkg-config
+
+echo "=== Install Latest Neovim (v0.11+ nightly) ==="
+# WSL環境などでFUSE依存のAppImageが動かないケースを考慮し、tarballを展開して配置します
+cd /tmp
+curl -LO https://github.com/neovim/neovim/releases/download/nightly/nvim-linux-x86_64.tar.gz
+sudo rm -rf /opt/nvim-linux-x86_64
+sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+# パスを通すためにシンボリックリンクを張る
+sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
+rm -f nvim-linux-x86_64.tar.gz
 
 echo "=== 2. Node.js (for tools) ==="
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
@@ -28,15 +39,13 @@ if [ ! -d "$HOME/dotfiles" ]; then
 fi
 
 echo "=== 6. Symlinks ==="
-# nvimの実体ディレクトリは作らず、.config と sheldonフォルダだけ作る
 mkdir -p "$HOME/.config/sheldon"
-mkdir -p "$HOME/.local/bin" # 今回LSPを置く場所も作っておく
+mkdir -p "$HOME/.local/bin"
 
 ln -sf "$HOME/dotfiles/zsh/.zshrc" "$HOME/.zshrc"
 ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
 ln -sf "$HOME/dotfiles/sheldon/plugins.toml" "$HOME/.config/sheldon/plugins.toml"
 
-# nvimディレクトリが既にあれば削除し、フォルダごとリンクする
 rm -rf "$HOME/.config/nvim"
 ln -s "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
 
@@ -44,17 +53,13 @@ ln -sf "$HOME/dotfiles/tmux/.tmux.conf" "$HOME/.tmux.conf"
 chmod +x "$HOME/dotfiles/tmux/start-main.sh" || true
 
 echo "=== 7. Disable zellij autostart (if exists) and enable tmux autostart ==="
-# 既に ~/.zshrc に zellij 起動行があれば無効化（保険）
 if grep -q "zellij" "$HOME/.zshrc"; then
-  sed -i 's/^\(.*zellij.*\)$/# disabled-by-setup: \1/' "$HOME/.zshrc" || true
+  sed -i 's/^\\(.*zellij.*\\)$/# disabled-by-setup: \\1/' "$HOME/.zshrc" || true
 fi
 
-# tmux自動起動ブロックを末尾に追記（重複追記しない）
 if ! grep -q "tmux-start-main-sh" "$HOME/.zshrc"; then
   cat >> "$HOME/.zshrc" <<'EOF'
-
 # tmux-start-main-sh
-# interactive shell で tmux 未接続なら main を起動/復帰
 if command -v tmux >/dev/null 2>&1; then
   if [ -z "${TMUX:-}" ] && [ -n "${PS1:-}" ]; then
     exec "$HOME/dotfiles/tmux/start-main.sh"

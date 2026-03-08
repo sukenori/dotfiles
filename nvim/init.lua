@@ -144,10 +144,13 @@ require("lazy").setup({
     config = function()
       -- 新しいLSP APIでの設定 (v0.11以降)
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      require('lspconfig').nim_ls.setup({
+      vim.lsp.config('nim_langserver', {
         cmd = { "nimlangserver" },
+        filetypes = { "nim" },
+        root_markers = { "nim.cfg", ".git" },
         capabilities = capabilities,
       })
+      vim.lsp.enable('nim_langserver')
       
       -- 補完ポップアップの設定
       local cmp = require('cmp')
