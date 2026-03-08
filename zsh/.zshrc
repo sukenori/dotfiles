@@ -29,9 +29,3 @@ eval "$(zoxide init zsh)"
 # pureプロンプトの有効化
 autoload -U promptinit; promptinit
 prompt pure
-
-# --- WSL起動時にZellijを自動起動する設定（安全装置付き） ---
-# ZELLIJの中ではなく、かつNeovimの中（ターミナルペイン）でもない場合のみ起動する
-if [[ -z "$ZELLIJ" && -z "$NVIM" ]]; then
-  exec zellij attach -c main
-fi
