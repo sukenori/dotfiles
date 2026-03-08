@@ -1,9 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# 1) Windows改行(CRLF)で /bin/bash^M になる事故を自己修復
-sed -i 's/\r$//' "$0" || true
-
 echo "=== 1. apt packages ==="
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
