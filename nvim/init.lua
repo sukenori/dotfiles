@@ -133,7 +133,8 @@ require("lazy").setup({
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
       -- v0.11以上なら新API、それ以下なら従来のlspconfigを使う（バージョン非依存）
       if vim.lsp.config then
-        vim.lspcmd = { "distrobox", "enter", "atcoder-env", "--", "nimlangserver" },
+        vim.lsp.config('nim_langserver', {
+          cmd = { "distrobox", "enter", "atcoder-env", "--", "nimlangserver" },
           filetypes = { "nim" },
           root_markers = { "nim.cfg", ".git" },
           capabilities = capabilities,
