@@ -32,9 +32,6 @@ source "$HOME/.cargo/env"
 cargo install sheldon
 cargo install zoxide --locked
 
-echo "=== 4. pure-prompt ==="
-sudo npm install --global pure-prompt
-
 echo "=== 5. Clone dotfiles ==="
 if [ ! -d "$HOME/dotfiles" ]; then
   git clone https://github.com/sukenori/dotfiles.git "$HOME/dotfiles"
@@ -53,22 +50,6 @@ ln -s "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
 
 ln -sf "$HOME/dotfiles/tmux/.tmux.conf" "$HOME/.tmux.conf"
 chmod +x "$HOME/dotfiles/tmux/start-main.sh" || true
-
-echo "=== 7. Disable zellij autostart (if exists) and enable tmux autostart ==="
-if grep -q "zellij" "$HOME/.zshrc"; then
-  sed -i 's/^\\(.*zellij.*\\)$/# disabled-by-setup: \\1/' "$HOME/.zshrc" || true
-fi
-
-if ! grep -q "tmux-start-main-sh" "$HOME/.zshrc"; then
-  cat >> "$HOME/.zshrc" <<'EOF'
-# tmux-start-main-sh
-if command -v tmux >/dev/null 2>&1; then
-  if [ -z "${TMUX:-}" ] && [ -n "${PS1:-}" ]; then
-    exec "$HOME/dotfiles/tmux/start-main.sh"
-  fi
-fi
-EOF
-fi
 
 echo "=== 8. Git CRLF safety ==="
 git config --global core.autocrlf false || true
