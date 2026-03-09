@@ -14,8 +14,9 @@ function chpwd() { ls -la }
 alias archive='make -C /workspace/env archive'
 
 # fzfの設定
-source /usr/share/doc/fzf/examples/completion.zsh 2>/dev/null || true
-source /usr/share/doc/fzf/examples/key-bindings.zsh 2>/dev/null || true
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --zsh)"
+fi
 export FZF_CTRL_T_COMMAND='find . -name ".git" -prune -o -print'
 
 # パスの設定 (Cargoのパスも追加しておくことでRustツールが確実に動きます)
