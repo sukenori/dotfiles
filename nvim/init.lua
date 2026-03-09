@@ -1,176 +1,94 @@
--- =========================================================================
--- 0. 基本設定（行番号・タブ幅など）
--- =========================================================================
-vim.opt.number = true           -- 絶対行番号を表示
-vim.opt.relativenumber = true   -- 相対行番号を表示（不要なら false に）
-vim.opt.tabstop = 2             -- Tab文字の幅を2に設定
-vim.opt.shiftwidth = 2          -- 自動インデントの幅を2に設定
-vim.opt.expandtab = true        -- Tabをスペースに変換する
-vim.opt.smartindent = true      -- 改行時に自動でインデントを下げる
+-- ===========================================================================
+-- init.lua — Neovim のメイン設定ファイル
+--
+-- 構成:
+--   このファイル    … 基本設定 + AtCoder 用キーマップ
+--   lua/plugins/   … プラグインごとの設定（lazy.nvim が自動で読み込む）
+--     copilot.lua  … GitHub Copilot（AI 補完 + チャット）
+--     cmp.lua      … nvim-cmp（入力補完のポップアップ）
+--     lsp.lua      … LSP（nimlangserver との接続）
+--     telescope.lua… Telescope（ファイル検索・全文検索）
+-- ===========================================================================
 
--- =========================================================================
--- 1. lazy.nvim の自動インストールと読み込み
--- =========================================================================
+-- ---------------------------------------------------------------------------
+-- 基本設定（エディタの見た目と挙動）
+-- ---------------------------------------------------------------------------
+vim.opt.number         = true   -- 行番号を表示する
+vim.opt.relativenumber = true   -- カーソルからの相対行番号も表示する
+vim.opt.tabstop        = 2     -- Tab キーの幅を半角2文字分にする
+vim.opt.shiftwidth     = 2     -- 自動インデントの幅を半角2文字分にする
+vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変換する
+vim.opt.smartindent    = true   -- 改行時にインデントを自動調整する
+vim.g.mapleader        = " "   -- Space キーを Leader キー（ショートカットの起点）にする
+
+-- ---------------------------------------------------------------------------
+-- lazy.nvim（プラグインマネージャ）の自動インストールと起動
+-- ---------------------------------------------------------------------------
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
     "git", "clone", "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git", "--branch=stable", lazypath,
+    "https://github.com/folke/lazy.nvim.git",
+    "--branch=stable", lazypath,
   })
 end
 vim.opt.rtp:prepend(lazypath)
 
--- =========================================================================
--- 2. 既存の設定（ターミナル操作やAtCoder用キーマップ）
--- =========================================================================
-local term_buf = nil
-local term_chan = nil
-
--- 下部ターミナルにコマンドを送り込む関数
-local function run_in_term(cmd)
-  vim.cmd('w') -- 実行前に必ず保存
-
-    if not term_buf or not vim.api.nvim_buf_is_valid(term_buf) then
-    -- tmux側で下部ターミナルを管理するため、ここでは何もしない
-    return
-  else
-
-    local win_found = false
-    for _, win in ipairs(vim.api.nvim_list_wins()) do
-      if vim.api.nvim_win_get_buf(win) == term_buf then
-        win_found = true
-        break
-      end
-    end
-    if not win_found then
-      vim.cmd('botright 15split')
-      vim.api.nvim_win_set_buf(0, term_buf)
-      vim.cmd('wincmd p')
-    end
-  end
-
-  vim.api.nvim_chan_send(term_chan, cmd .. "\n")
-  vim.fn.win_execute(vim.fn.bufwinid(term_buf), 'normal! G')
-end
-
--- AtCoder実行環境の設定
-local env_dir = vim.fn.expand('~/atcoder-nim-env')
-
-local function get_make_file()
-  local abs_path = vim.fn.expand('%:p')
-  return abs_path:sub(#env_dir + 2)
-end
-
--- キーマップ
-vim.keymap.set('n', '<Leader>c', function() run_in_term('make -C ' .. env_dir .. ' build FILE=' .. get_make_file()) end, { silent = true })
-vim.keymap.set('n', '<Leader>s', function() run_in_term('make -C ' .. env_dir .. ' submit-auto FILE=' .. get_make_file()) end, { silent = true })
-vim.keymap.set('n', '<Leader>u', function()
-  local url = vim.fn.getreg('+'):gsub('%s+', '')
-  run_in_term('make -C ' .. env_dir .. ' submit-url FILE=' .. get_make_file() .. ' URL=' .. url)
-end, { silent = true })
-vim.keymap.set('n', '<Leader>b', function()
-  vim.cmd('w')
-  vim.cmd('!make -C ' .. env_dir .. ' bundle FILE=' .. get_make_file())
-  local target_file = env_dir .. '/bundled.txt'
-  if vim.fn.filereadable(target_file) == 1 then
-    local lines = vim.fn.readfile(target_file)
-    vim.fn.setreg('+', table.concat(lines, '\n') .. '\n')
-    print('バンドル結果をクリップボードにコピーしました')
-  else
-    print('エラー: ' .. target_file .. ' が見つかりません。')
-  end
-end, { silent = true })
-
--- =========================================================================
--- 3. プラグインの設定 (Copilot, Telescope, LSP, 補完)
--- =========================================================================
+-- lua/plugins/ フォルダ内の設定ファイルを自動で読み込む
 require("lazy").setup({
-  -- Copilot本体とCopilotChat
-  {
-    "zbirenbaum/copilot.lua",
-    cmd = "Copilot",
-    event = "InsertEnter",
-    config = function()
-      require("copilot").setup({
-        suggestion = { enabled = true, auto_trigger = true }, -- 補完を有効化
-        panel = { enabled = false },
-      })
-    end,
-  },
-  {
-    "CopilotC-Nvim/CopilotChat.nvim",
-    dependencies = { { "zbirenbaum/copilot.lua" }, { "nvim-lua/plenary.nvim" } },
-    opts = {
-      system_prompt = "あなたは優秀なアシスタントです。簡潔に回答してください。マークダウンの強調記号やLaTeX表記は絶対に使用しないでください。",
-    },
-  },
-
-  -- Telescope
-  {
-    'nvim-telescope/telescope.nvim', tag = '0.1.8',
-    dependencies = {
-      'nvim-lua/plenary.nvim',
-      { 'nvim-telescope/telescope-fzf-native.nvim', build = 'make' }
-    },
-    config = function()
-      local builtin = require('telescope.builtin')
-      vim.keymap.set('n', '<Space>f', builtin.find_files, {})
-      vim.keymap.set('n', '<Space>g', builtin.live_grep, {})
-    end
-  },
-
-  -- LSP (nimlangserver) と 自動補完 (nvim-cmp)
-  {
-    "neovim/nvim-lspconfig",
-    dependencies = {
-      "hrsh7th/nvim-cmp",         -- 補完エンジン
-      "hrsh7th/cmp-nvim-lsp",     -- LSPソース
-      "L3MON4D3/LuaSnip",         -- スニペットエンジン
-      "saadparwaiz1/cmp_luasnip", -- スニペットソース
-    },
-
-    config = function()
-      local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      -- v0.11以上なら新API、それ以下なら従来のlspconfigを使う（バージョン非依存）
-      if vim.lsp.config then
-        vim.lsp.config('nim_langserver', {
-          cmd = { "distrobox", "enter", "atcoder-env", "--", "nimlangserver" },
-          filetypes = { "nim" },
-          root_markers = { "nim.cfg", ".git" },
-          capabilities = capabilities,
-        })
-        vim.lsp.enable('nim_langserver')
-      else
-        require('lspconfig').nim_ls.setup({
-          cmd = { "nimlangserver" },
-          capabilities = capabilities,
-        })
-      end
-      
-      -- 補完ポップアップの設定
-      local cmp = require('cmp')
-      local luasnip = require('luasnip')
-      cmp.setup({
-        snippet = {
-          expand = function(args) luasnip.lsp_expand(args.body) end,
-        },
-        mapping = cmp.mapping.preset.insert({
-          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-          ['<C-f>'] = cmp.mapping.scroll_docs(4),
-          ['<C-Space>'] = cmp.mapping.complete(),
-          ['<CR>'] = cmp.mapping.confirm({ select = true }), -- Enterで補完を確定
-          ['<Tab>'] = cmp.mapping(function(fallback)
-            if cmp.visible() then cmp.select_next_item()
-            elseif luasnip.expand_or_jumpable() then luasnip.expand_or_jump()
-            else fallback() end
-          end, { "i", "s" }),
-        }),
-        sources = cmp.config.sources({
-          { name = 'nvim_lsp' }, -- LSPからの候補
-          { name = 'luasnip' },  -- スニペット
-        })
-      })
-    end
-  }
+  spec = { { import = "plugins" } },
 })
 
+-- ---------------------------------------------------------------------------
+-- AtCoder 用キーマップ（tmux の下ペインにコマンドを送り込む）
+--
+-- 前提: tmux/start-main.sh で起動すると、上ペインが Neovim、
+--       下ペインがシェルになる。ここではその下ペインにコマンドを送る。
+-- ---------------------------------------------------------------------------
+local env_dir = vim.fn.expand("~/atcoder-nim-env")
+
+--- 現在開いているファイルの、atcoder-nim-env からの相対パスを返す
+local function get_make_file()
+  local abs = vim.fn.expand("%:p")
+  return abs:gsub("^" .. vim.pesc(env_dir) .. "/", "")
+end
+
+--- tmux の下ペイン（ペイン番号2）にコマンドを送って実行する
+local function tmux_send(cmd)
+  vim.cmd("w") -- まず保存
+  vim.fn.system(string.format("tmux send-keys -t main:editor.2 '%s' Enter", cmd))
+end
+
+-- Leader + c : コンパイル
+vim.keymap.set("n", "<Leader>c", function()
+  tmux_send(string.format("make -C %s build FILE=%s", env_dir, get_make_file()))
+end, { silent = true, desc = "AtCoder: コンパイル" })
+
+-- Leader + s : テスト＋自動提出（ファイル名から URL を推測）
+vim.keymap.set("n", "<Leader>s", function()
+  tmux_send(string.format("make -C %s submit-auto FILE=%s", env_dir, get_make_file()))
+end, { silent = true, desc = "AtCoder: テスト＋提出" })
+
+-- Leader + u : テスト＋提出（クリップボードの URL を使う）
+vim.keymap.set("n", "<Leader>u", function()
+  local url = vim.fn.getreg("+"):gsub("%s+", "")
+  if url == "" then
+    print("クリップボードが空です")
+    return
+  end
+  tmux_send(string.format("make -C %s submit-url FILE=%s URL=%s", env_dir, get_make_file(), url))
+end, { silent = true, desc = "AtCoder: URL 指定で提出" })
+
+-- Leader + b : バンドル（ライブラリ展開）してクリップボードにコピー
+vim.keymap.set("n", "<Leader>b", function()
+  vim.cmd("w")
+  vim.fn.system(string.format("make -C %s bundle FILE=%s", env_dir, get_make_file()))
+  local target = env_dir .. "/bundled.txt"
+  if vim.fn.filereadable(target) == 1 then
+    local lines = vim.fn.readfile(target)
+    vim.fn.setreg("+", table.concat(lines, "\n") .. "\n")
+    print("バンドル結果をクリップボードにコピーしました")
+  else
+    print("エラー: " .. target .. " が見つかりません")
+  end
+end, { silent = true, desc = "AtCoder: バンドル＋コピー" })

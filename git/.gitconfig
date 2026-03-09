@@ -1,13 +1,24 @@
-[user]
-    name = sukenori
-    email = sukenori@coo.net
-[credential]
-    # Windows側のGit Credential ManagerをWSLから呼び出すための魔法の1行
-    helper = /mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe
-[init]
-    # 新規リポジトリ作成時のデフォルトブランチ名をmainにする
-    defaultBranch = main
-[core]
-    # Gitの標準エディタをNeovimにする
-    editor = nvim
+# ===========================================================================
+# .gitconfig — Git のグローバル設定
+#
+# dotfiles/linux/setup.sh がこのファイルへのシンボリックリンクを ~/.gitconfig に作成する
+# ===========================================================================
 
+[user]
+	name = sukenori
+	email = sukenori@coo.net
+
+[credential]
+	# Windows 側の Git Credential Manager を WSL から呼び出す
+	# （GitHub の認証情報を Windows 側で一元管理するため）
+	helper = "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe"
+
+[init]
+	# 新規リポジトリのデフォルトブランチ名
+	defaultBranch = main
+
+[core]
+	# Git が呼び出すエディタ（コミットメッセージ編集時など）
+	editor = nvim
+	# 改行コードの自動変換を無効にする（.gitattributes で管理するため）
+	autocrlf = false
