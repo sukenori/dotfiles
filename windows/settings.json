@@ -14,11 +14,9 @@
     "list": [
       {
         "name": "Ubuntu",
-        "source": "wsl -d Ubuntu",
-        "startingDirectory": "\\wsl.localhost/Ubuntu/home/sukenori"
+        "source": "Windows.Terminal.Wsl",
+        "startingDirectory": "//wsl$/Ubuntu/home/sukenori"
       }
     ]
-  },
-  "startingDirectory": "//wsl$/Ubuntu/home/sukenori"
+  }
 }
-
