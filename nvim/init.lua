@@ -26,11 +26,6 @@ vim.opt.rtp:prepend(lazypath)
 local term_buf = nil
 local term_chan = nil
 
--- Neovim起動時に自動でターミナルを開く
-vim.api.nvim_create_autocmd("VimEnter", {
-  callback = function() init_terminal() end
-})
-
 -- 下部ターミナルにコマンドを送り込む関数
 local function run_in_term(cmd)
   vim.cmd('w') -- 実行前に必ず保存
