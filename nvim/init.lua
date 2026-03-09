@@ -19,6 +19,7 @@ vim.opt.tabstop        = 2     -- Tab キーの幅を半角2文字分にする
 vim.opt.shiftwidth     = 2     -- 自動インデントの幅を半角2文字分にする
 vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変換する
 vim.opt.smartindent    = true   -- 改行時にインデントを自動調整する
+vim.opt.splitright     = true   -- 縦分割を右側に開く（CopilotChat 等）
 vim.g.mapleader        = " "   -- Space キーを Leader キー（ショートカットの起点）にする
 
 -- ---------------------------------------------------------------------------

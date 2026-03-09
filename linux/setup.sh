@@ -24,9 +24,19 @@ set -euo pipefail
 echo "=== 1/8 apt パッケージのインストール ==="
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y \
-  curl git zsh ripgrep fzf tmux \
+  curl git zsh ripgrep tmux \
   openssh-client \
   podman distrobox build-essential libssl-dev pkg-config
+
+# fzf は apt 版だとバージョンが古く --zsh オプションが使えないため、
+# GitHub Release からバイナリを直接取得する
+echo "--- fzf (GitHub Release) のインストール ---"
+mkdir -p "$HOME/.local/bin"
+FZF_VERSION=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "\K[^"]*' | sed 's/^v//')
+curl -Lo /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz"
+tar xzf /tmp/fzf.tar.gz -C "$HOME/.local/bin/" fzf
+chmod +x "$HOME/.local/bin/fzf"
+rm -f /tmp/fzf.tar.gz
 
 # ---------------------------------------------------------------------------
 # 2. Neovim 最新版のインストール

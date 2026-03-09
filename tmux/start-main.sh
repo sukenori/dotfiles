@@ -27,7 +27,8 @@ fi
 tmux new-session -d -s "$SESSION" -n editor
 
 # 上ペイン: atcoder-nim-env に移動して Neovim を起動
-tmux send-keys -t "$SESSION":editor.1 "cd ~/atcoder-nim-env && nvim" C-m
+# --listen でソケットを開き、下ペインからファイルを開けるようにする
+tmux send-keys -t "$SESSION":editor.1 "cd ~/atcoder-nim-env && nvim --listen /tmp/nvim-main.sock" C-m
 
 # 下ペイン: シェルを8行分の高さで分割（make コマンドの出力先）
 tmux split-window -v -l 8 -t "$SESSION":editor

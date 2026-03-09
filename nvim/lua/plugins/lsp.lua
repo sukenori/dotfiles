@@ -17,7 +17,8 @@ return {
     if vim.lsp.config then
       vim.lsp.config("nim_langserver", {
         -- Distrobox 経由でコンテナ内の nimlangserver を起動する
-        cmd = { "distrobox", "enter", "atcoder-env", "--", "nimlangserver" },
+        -- コンテナ内の PATH に ~/.nimble/bin が入っていないため絶対パスを指定する
+        cmd = { "distrobox", "enter", "atcoder-env", "--", vim.fn.expand("~/.nimble/bin/nimlangserver") },
         filetypes = { "nim" },
         -- プロジェクトのルートを判定するファイル（nim.cfg があるフォルダがルート）
         root_markers = { "nim.cfg", ".git" },
@@ -27,7 +28,7 @@ return {
     else
       -- Neovim 0.10 以前のフォールバック
       require("lspconfig").nim_langserver.setup({
-        cmd = { "distrobox", "enter", "atcoder-env", "--", "nimlangserver" },
+        cmd = { "distrobox", "enter", "atcoder-env", "--", vim.fn.expand("~/.nimble/bin/nimlangserver") },
         capabilities = capabilities,
       })
     end

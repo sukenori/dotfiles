@@ -26,6 +26,10 @@ return {
     },
     opts = {
       system_prompt = "あなたは優秀なアシスタントです。簡潔に回答してください。マークダウンの強調記号やLaTeX表記は絶対に使用しないでください。",
+      window = {
+        layout = "vertical",  -- 縦分割（右側に表示される — splitright が有効のため）
+        width = 0.3,           -- 画面幅の30%
+      },
     },
   },
 }
