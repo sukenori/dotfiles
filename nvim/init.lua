@@ -30,9 +30,11 @@ local term_chan = nil
 local function run_in_term(cmd)
   vim.cmd('w') -- 実行前に必ず保存
 
-  if not term_buf or not vim.api.nvim_buf_is_valid(term_buf) then
-    init_terminal()
+    if not term_buf or not vim.api.nvim_buf_is_valid(term_buf) then
+    -- tmux側で下部ターミナルを管理するため、ここでは何もしない
+    return
   else
+
     local win_found = false
     for _, win in ipairs(vim.api.nvim_list_wins()) do
       if vim.api.nvim_win_get_buf(win) == term_buf then
@@ -128,15 +130,22 @@ require("lazy").setup({
     },
 
     config = function()
-      -- 新しいLSP APIでの設定 (v0.11以降)
       local capabilities = require('cmp_nvim_lsp').default_capabilities()
-      vim.lsp.config('nim_langserver', {
-        cmd = { "nimlangserver" },
-        filetypes = { "nim" },
-        root_markers = { "nim.cfg", ".git" },
-        capabilities = capabilities,
-      })
-      vim.lsp.enable('nim_langserver')
+      -- v0.11以上なら新API、それ以下なら従来のlspconfigを使う（バージョン非依存）
+      if vim.lsp.config then
+        vim.lsp.config('nim_langserver', {
+          cmd = { "nimlangserver" },
+          filetypes = { "nim" },
+          root_markers = { "nim.cfg", ".git" },
+          capabilities = capabilities,
+        })
+        vim.lsp.enable('nim_langserver')
+      else
+        require('lspconfig').nim_ls.setup({
+          cmd = { "nimlangserver" },
+          capabilities = capabilities,
+        })
+      end
       
       -- 補完ポップアップの設定
       local cmp = require('cmp')

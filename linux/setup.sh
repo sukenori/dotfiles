@@ -19,8 +19,10 @@ sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
 sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 rm -f nvim-linux-x86_64.tar.gz
 
-echo "=== 2. Node.js (for tools) ==="
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+echo "=== 2. Node.js (for tools, latest LTS) ==="
+# バージョンを固定せず、常にその時点の最新LTSをインストールする
+NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+')
+curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | sudo -E bash -
 sudo apt install -y nodejs
 
 echo "=== 3. Rust/Cargo + sheldon + zoxide ==="
