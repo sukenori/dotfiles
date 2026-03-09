@@ -49,7 +49,11 @@ rm -rf "$HOME/.config/nvim"
 ln -s "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
 
 ln -sf "$HOME/dotfiles/tmux/.tmux.conf" "$HOME/.tmux.conf"
-chmod +x "$HOME/dotfiles/tmux/start-main.sh" || true
+# start-main.shの実行権限をGitに記憶させた上で付与する
+git -C "$HOME/dotfiles" add --chmod=+x tmux/start-main.sh
+git -C "$HOME/dotfiles" commit -m "fix: start-main.sh を実行可能に設定" 2>/dev/null || true
+chmod +x "$HOME/dotfiles/tmux/start-main.sh"
+
 
 echo "=== 8. Git CRLF safety ==="
 git config --global core.autocrlf false || true
@@ -59,11 +63,6 @@ sudo chsh -s "$(which zsh)" "$USER" || true
 
 echo "=== Install Tailscale ==="
 curl -fsSL https://tailscale.com/install.sh | sh
-
-echo "=== 10. distrobox-export nimlangserver ==="
-distrobox enter atcoder-env -- distrobox-export \
-  --bin "$HOME/.nimble/bin/nimlangserver" \
-  --export-path "$HOME/.local/bin"
 
 echo "=== DONE ==="
 echo "Next: Android側でTermuxのsshdを起動し、WSLから ssh -p 8022 で接続します。"
