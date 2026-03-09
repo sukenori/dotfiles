@@ -60,5 +60,10 @@ sudo chsh -s "$(which zsh)" "$USER" || true
 echo "=== Install Tailscale ==="
 curl -fsSL https://tailscale.com/install.sh | sh
 
+echo "=== 10. distrobox-export nimlangserver ==="
+distrobox enter atcoder-env -- distrobox-export \
+  --bin "$HOME/.nimble/bin/nimlangserver" \
+  --export-path "$HOME/.local/bin"
+
 echo "=== DONE ==="
 echo "Next: Android側でTermuxのsshdを起動し、WSLから ssh -p 8022 で接続します。"
