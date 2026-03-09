@@ -18,6 +18,7 @@
         "startingDirectory": "\\wsl.localhost/Ubuntu/home/sukenori"
       }
     ]
-  }
+  },
+  "startingDirectory": "//wsl$/Ubuntu/home/sukenori"
 }
 
