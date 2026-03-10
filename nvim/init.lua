@@ -40,6 +40,11 @@ require("lazy").setup({
   spec = { { import = "plugins" } },
 })
 
+-- LSP の状態確認・再起動
+vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart nim_langserver<CR>", { silent = true, desc = "LSP: 起動" })
+vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
+vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
+
 -- ---------------------------------------------------------------------------
 -- AtCoder 用キーマップ（tmux の下ペインにコマンドを送り込む）
 --

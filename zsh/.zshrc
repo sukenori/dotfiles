@@ -25,9 +25,33 @@ alias archive='make -C ~/atcoder-nim-env archive'
 # 上ペインの Neovim でファイルを開く（tmux の下ペインから使う）
 # tmux + Neovim server mode で実現。Neovim が起動していなければ普通に開く
 function e() {
-  if [[ -S /tmp/nvim-main.sock ]]; then
-    nvim --server /tmp/nvim-main.sock --remote "$(realpath "${1:?ファイル名を指定してください}")" 2>/dev/null && return
+  local target="${1:?ファイル名を指定してください}"
+  local abs
+  abs="$(realpath -m -- "$target")"
+  local pane
+  pane=""
+
+  # tmux の main:editor で「上側にある nvim ペイン」を探して :edit を送り込む
+  # pane index の 0/1 始まり差異に依存しないため、環境差で壊れにくい
+  if tmux has-session -t main:editor 2>/dev/null; then
+    pane="$(tmux list-panes -t main:editor -F '#{pane_id} #{pane_top} #{pane_current_command}' \
+      | awk '$3=="nvim"{print $1, $2}' \
+      | sort -k2,2n \
+      | head -n1 \
+      | awk '{print $1}')"
   fi
+
+  if [[ -n "$pane" ]]; then
+    local escaped="${abs// /\\ }"
+    tmux send-keys -t "$pane" Escape ":edit $escaped" Enter
+    return
+  fi
+
+  # tmux 外では、ソケットがあれば remote を試す（長く待たない）
+  if [[ -S /tmp/nvim-main.sock ]] && timeout 1 nvim --server /tmp/nvim-main.sock --remote "$abs" >/dev/null 2>&1; then
+    return
+  fi
+
   nvim "$@"
 }
 
