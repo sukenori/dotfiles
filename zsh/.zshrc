@@ -31,6 +31,13 @@ function e() {
   local pane
   pane=""
 
+  # nimlangserver は未作成 .nim を開くと初回起動時に失敗することがあるため、
+  # 先に空ファイルを作ってから :edit する
+  if [[ "$abs" == *.nim ]] && [[ ! -e "$abs" ]]; then
+    mkdir -p -- "$(dirname -- "$abs")"
+    : > "$abs"
+  fi
+
   # tmux の main:editor で「上側にある nvim ペイン」を探して :edit を送り込む
   # pane index の 0/1 始まり差異に依存しないため、環境差で壊れにくい
   if tmux has-session -t main:editor 2>/dev/null; then
@@ -45,6 +52,12 @@ function e() {
     local escaped="${abs// /\\ }"
     tmux send-keys -t "$pane" Escape ":edit $escaped" Enter
     return
+  fi
+
+  # tmux セッションはあるが nvim ペインが見つからない場合は誤って下で nvim を開かない
+  if tmux has-session -t main:editor 2>/dev/null; then
+    print -u2 "e: main:editor に nvim ペインが見つかりません（上ペインで nvim を起動してください）"
+    return 1
   fi
 
   # tmux 外では、ソケットがあれば remote を試す（長く待たない）

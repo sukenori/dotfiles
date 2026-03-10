@@ -45,6 +45,20 @@ vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart nim_langserver<CR>", { silent =
 vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
 vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
 
+-- 新規 .nim ファイルを開いた時点で空ファイルを作る。
+-- nimlangserver は存在しないパスだと初回 attach で失敗することがあるため。
+vim.api.nvim_create_autocmd("BufNewFile", {
+  pattern = "*.nim",
+  callback = function(ev)
+    local path = vim.api.nvim_buf_get_name(ev.buf)
+    if path == "" or vim.fn.filereadable(path) == 1 then
+      return
+    end
+    vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
+    vim.fn.writefile({}, path)
+  end,
+})
+
 -- ---------------------------------------------------------------------------
 -- AtCoder 用キーマップ（tmux の下ペインにコマンドを送り込む）
 --
