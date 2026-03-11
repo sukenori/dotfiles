@@ -1,73 +1,52 @@
 -- ===========================================================================
--- lsp.lua — LSP（Language Server Protocol）の設定
+-- lsp.lua — LSP（Language Server Protocol）の共通設定
 --
--- nimlangserver を Distrobox コンテナ ("atcoder-env") 内で起動し、
--- ホスト側の Neovim と接続する。
--- これにより、コンテナ内の Nim 環境を使いながら、
--- ホスト側のエディタで補完・定義ジャンプ・エラー表示が効く。
+-- ここでは診断表示や、LSP が attach された後の共通キーマップだけを定義する。
+-- 言語ごとのサーバー起動方法は、グローバル設定に埋め込まず、
+-- 必要なプロジェクト側の .nvim.lua などで追加する。
 -- ===========================================================================
 return {
   "neovim/nvim-lspconfig",
-  dependencies = { "hrsh7th/cmp-nvim-lsp" },
   config = function()
+    -- 診断（エラー・警告）の見せ方をまとめて設定する。
     vim.diagnostic.config({
-      virtual_text = true,
-      underline = true,
-      signs = true,
-      update_in_insert = false,
-      severity_sort = true,
+      virtual_text = true,    -- 行内にエラー内容を直接表示する
+      underline = true,       -- 問題のある箇所に下線を引く
+      signs = true,           -- 行番号横に記号を出して問題の有無を見やすくする
+      update_in_insert = false, -- 入力中は診断を更新せず、ノイズを減らす
+      severity_sort = true,   -- 重要度の高い診断を優先して扱う
     })
 
+    -- LSP が各バッファに接続された瞬間だけ、そのバッファ専用のキーマップを設定する。
     vim.api.nvim_create_autocmd("LspAttach", {
+      -- 同じ種類の autocommand をまとめるグループ。
+      -- clear = true にしておくと再読み込み時に古い定義が残らない。
       group = vim.api.nvim_create_augroup("UserLspKeymaps", { clear = true }),
       callback = function(ev)
+        -- 今アタッチされたバッファだけに効く buffer-local keymap を作るための共通オプション。
         local opts = { buffer = ev.buf, silent = true }
+
+        -- カーソル位置のシンボルについて、型情報や説明を小さなウィンドウで表示する。
         vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
+        -- カーソル位置の定義元へジャンプする。
         vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
+        -- カーソル位置の宣言元へジャンプする。
         vim.keymap.set("n", "gD", vim.lsp.buf.declaration, opts)
+        -- カーソル位置のシンボルがどこで参照されているか一覧する。
         vim.keymap.set("n", "gr", vim.lsp.buf.references, opts)
+        -- カーソル位置の実装へジャンプする。
         vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
+        -- シンボル名を安全に一括変更する。
         vim.keymap.set("n", "<Leader>rn", vim.lsp.buf.rename, opts)
+        -- その場で実行できる修正候補や変換候補を表示する。
         vim.keymap.set("n", "<Leader>ca", vim.lsp.buf.code_action, opts)
+        -- 1つ前の診断へ移動する。
         vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
+        -- 1つ次の診断へ移動する。
         vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
+        -- カーソル位置の診断内容をフロートで表示する。
         vim.keymap.set("n", "<Leader>le", vim.diagnostic.open_float, opts)
       end,
     })
-
-    -- nvim-cmp の補完機能を LSP に伝える（これで LSP 由来の補完候補が出る）
-    local capabilities = require("cmp_nvim_lsp").default_capabilities()
-    local nimble_bin = vim.fn.expand("~/.nimble/bin")
-    local server = nimble_bin .. "/nimlangserver"
-    local server_path = nimble_bin .. ":/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    local cmd = {
-      "distrobox",
-      "enter",
-      "atcoder-env",
-      "--",
-      "env",
-      "PATH=" .. server_path,
-      server,
-    }
-
-    -- Neovim 0.11 以降の新しい LSP 設定 API を使う
-    if vim.lsp.config then
-      vim.lsp.config("nim_langserver", {
-        -- Distrobox 経由でコンテナ内の nimlangserver を起動する
-        -- nimlangserver が内部で呼ぶ nimsuggest 用に PATH も明示する
-        cmd = cmd,
-        filetypes = { "nim" },
-        -- プロジェクトのルートを判定するファイル（nim.cfg があるフォルダがルート）
-        root_markers = { "nim.cfg", ".git" },
-        capabilities = capabilities,
-      })
-      vim.lsp.enable("nim_langserver")
-    else
-      -- Neovim 0.10 以前のフォールバック
-      require("lspconfig").nim_langserver.setup({
-        cmd = cmd,
-        capabilities = capabilities,
-      })
-    end
   end,
 }

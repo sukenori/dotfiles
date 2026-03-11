@@ -22,8 +22,36 @@ function chpwd() { ls -la }
 # AtCoder の解答コードを日付フォルダに整理するショートカット
 alias archive='make -C ~/atcoder-nim-env archive'
 
+# Git コマンドの入力を短くする
+alias g='git'
+
+# 現在のディレクトリから親をたどって repo ローカル launcher を探して実行する
+# まず bin/dev、次に bin/dev-tmux を探す
+function dev() {
+  local dir launcher
+  dir="$PWD"
+
+  while [[ -n "$dir" ]]; do
+    for launcher in "$dir/bin/dev" "$dir/bin/dev-tmux"; do
+      if [[ -x "$launcher" ]]; then
+        (cd "$dir" && exec "$launcher" "$@")
+        return
+      fi
+    done
+
+    if [[ "$dir" == "$HOME" || "$dir" == "/" ]]; then
+      break
+    fi
+    dir="${dir:h}"
+  done
+
+  print -u2 "dev: repo ローカル launcher が見つかりません（bin/dev または bin/dev-tmux）"
+  return 1
+}
+
 # 上ペインの Neovim でファイルを開く（tmux の下ペインから使う）
-# tmux + Neovim server mode で実現。Neovim が起動していなければ普通に開く
+# tmux 内では「今いるウィンドウの nvim ペイン」を探して :edit を送り込む。
+# 見つからなければ普通に nvim を起動する。
 function e() {
   local target="${1:?ファイル名を指定してください}"
   local abs
@@ -31,17 +59,10 @@ function e() {
   local pane
   pane=""
 
-  # nimlangserver は未作成 .nim を開くと初回起動時に失敗することがあるため、
-  # 先に空ファイルを作ってから :edit する
-  if [[ "$abs" == *.nim ]] && [[ ! -e "$abs" ]]; then
-    mkdir -p -- "$(dirname -- "$abs")"
-    : > "$abs"
-  fi
-
-  # tmux の main:editor で「上側にある nvim ペイン」を探して :edit を送り込む
-  # pane index の 0/1 始まり差異に依存しないため、環境差で壊れにくい
-  if tmux has-session -t main:editor 2>/dev/null; then
-    pane="$(tmux list-panes -t main:editor -F '#{pane_id} #{pane_top} #{pane_current_command}' \
+  # 現在の tmux ウィンドウで「上側にある nvim ペイン」を探して :edit を送り込む
+  # これなら session 名や window 名を固定しなくてよい
+  if [[ -n "${TMUX:-}" ]]; then
+    pane="$(tmux list-panes -F '#{pane_id} #{pane_top} #{pane_current_command}' \
       | awk '$3=="nvim"{print $1, $2}' \
       | sort -k2,2n \
       | head -n1 \
@@ -54,14 +75,15 @@ function e() {
     return
   fi
 
-  # tmux セッションはあるが nvim ペインが見つからない場合は誤って下で nvim を開かない
-  if tmux has-session -t main:editor 2>/dev/null; then
-    print -u2 "e: main:editor に nvim ペインが見つかりません（上ペインで nvim を起動してください）"
+  # tmux 内だが nvim ペインが見つからない場合は誤って別 pane で remote しない
+  if [[ -n "${TMUX:-}" ]]; then
+    print -u2 "e: 現在の tmux ウィンドウに nvim ペインが見つかりません"
     return 1
   fi
 
-  # tmux 外では、ソケットがあれば remote を試す（長く待たない）
-  if [[ -S /tmp/nvim-main.sock ]] && timeout 1 nvim --server /tmp/nvim-main.sock --remote "$abs" >/dev/null 2>&1; then
+  # tmux 外では、明示されたソケットがあれば remote を試す（長く待たない）
+  if [[ -n "${NVIM_LISTEN_ADDRESS:-}" ]] && [[ -S "${NVIM_LISTEN_ADDRESS}" ]] \
+    && timeout 1 nvim --server "$NVIM_LISTEN_ADDRESS" --remote "$abs" >/dev/null 2>&1; then
     return
   fi
 

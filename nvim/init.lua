@@ -2,11 +2,12 @@
 -- init.lua — Neovim のメイン設定ファイル
 --
 -- 構成:
---   このファイル    … 基本設定 + AtCoder 用キーマップ
+--   このファイル    … 基本設定 + 共通キーマップ
+--   .nvim.lua       … プロジェクトごとの追加設定（この init.lua から明示的に読む）
 --   lua/plugins/   … プラグインごとの設定（lazy.nvim が自動で読み込む）
 --     copilot.lua  … GitHub Copilot（AI 補完 + チャット）
 --     cmp.lua      … nvim-cmp（入力補完のポップアップ）
---     lsp.lua      … LSP（nimlangserver との接続）
+--     lsp.lua      … LSP の共通設定
 --     telescope.lua… Telescope（ファイル検索・全文検索）
 -- ===========================================================================
 
@@ -20,7 +21,8 @@ vim.opt.shiftwidth     = 2     -- 自動インデントの幅を半角2文字分
 vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変換する
 vim.opt.smartindent    = true   -- 改行時にインデントを自動調整する
 vim.opt.splitright     = true   -- 縦分割を右側に開く（CopilotChat 等）
-vim.g.mapleader        = " "   -- Space キーを Leader キー（ショートカットの起点）にする
+vim.g.mapleader        = "\\" -- Vim の既定に合わせて Leader をバックスラッシュにする
+vim.g.maplocalleader   = ","   -- プロジェクトローカルのキーマップは , を起点にする
 
 -- ---------------------------------------------------------------------------
 -- lazy.nvim（プラグインマネージャ）の自動インストールと起動
@@ -40,75 +42,47 @@ require("lazy").setup({
   spec = { { import = "plugins" } },
 })
 
+-- 現在の作業ディレクトリから親をたどり、ユーザー所有の .nvim.lua を1つだけ読む。
+-- Neovim の trust 確認に依存せず、手元のプロジェクト固有設定だけを追加できるようにする。
+local function load_project_config()
+  local uv = vim.uv or vim.loop
+  local cwd = uv.cwd()
+  local home = vim.fn.expand("~")
+  local uid = uv.getuid and uv.getuid() or nil
+
+  while cwd and cwd:sub(1, #home) == home do
+    local candidate = cwd .. "/.nvim.lua"
+    local stat = uv.fs_stat(candidate)
+    if stat and stat.type == "file" and (uid == nil or stat.uid == uid) then
+      dofile(candidate)
+      return
+    end
+    if cwd == home then
+      return
+    end
+    local parent = vim.fn.fnamemodify(cwd, ":h")
+    if parent == cwd or parent == "" then
+      return
+    end
+    cwd = parent
+  end
+end
+
+-- ---------------------------------------------------------------------------
+-- 共通キーマップ
+-- ---------------------------------------------------------------------------
+vim.keymap.set("n", "<Leader>w", "<Cmd>write<CR>", { silent = true, desc = "保存" })
+vim.keymap.set("n", "<Leader>q", "<Cmd>quit<CR>", { silent = true, desc = "終了" })
+vim.keymap.set("n", "<Leader>h", "<Cmd>nohlsearch<CR>", { silent = true, desc = "検索ハイライト解除" })
+vim.keymap.set("n", "<C-h>", "<C-w>h", { silent = true, desc = "左のウィンドウへ移動" })
+vim.keymap.set("n", "<C-j>", "<C-w>j", { silent = true, desc = "下のウィンドウへ移動" })
+vim.keymap.set("n", "<C-k>", "<C-w>k", { silent = true, desc = "上のウィンドウへ移動" })
+vim.keymap.set("n", "<C-l>", "<C-w>l", { silent = true, desc = "右のウィンドウへ移動" })
+
 -- LSP の状態確認・再起動
-vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart nim_langserver<CR>", { silent = true, desc = "LSP: 起動" })
+vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart<CR>", { silent = true, desc = "LSP: 起動" })
 vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
 vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
 
--- 新規 .nim ファイルを開いた時点で空ファイルを作る。
--- nimlangserver は存在しないパスだと初回 attach で失敗することがあるため。
-vim.api.nvim_create_autocmd("BufNewFile", {
-  pattern = "*.nim",
-  callback = function(ev)
-    local path = vim.api.nvim_buf_get_name(ev.buf)
-    if path == "" or vim.fn.filereadable(path) == 1 then
-      return
-    end
-    vim.fn.mkdir(vim.fn.fnamemodify(path, ":h"), "p")
-    vim.fn.writefile({}, path)
-  end,
-})
-
--- ---------------------------------------------------------------------------
--- AtCoder 用キーマップ（tmux の下ペインにコマンドを送り込む）
---
--- 前提: tmux/start-main.sh で起動すると、上ペインが Neovim、
---       下ペインがシェルになる。ここではその下ペインにコマンドを送る。
--- ---------------------------------------------------------------------------
-local env_dir = vim.fn.expand("~/atcoder-nim-env")
-
---- 現在開いているファイルの、atcoder-nim-env からの相対パスを返す
-local function get_make_file()
-  local abs = vim.fn.expand("%:p")
-  return abs:gsub("^" .. vim.pesc(env_dir) .. "/", "")
-end
-
---- tmux の下ペイン（ペイン番号2）にコマンドを送って実行する
-local function tmux_send(cmd)
-  vim.cmd("w") -- まず保存
-  vim.fn.system(string.format("tmux send-keys -t main:editor.2 '%s' Enter", cmd))
-end
-
--- Leader + c : コンパイル
-vim.keymap.set("n", "<Leader>c", function()
-  tmux_send(string.format("make -C %s build FILE=%s", env_dir, get_make_file()))
-end, { silent = true, desc = "AtCoder: コンパイル" })
-
--- Leader + s : テスト＋自動提出（ファイル名から URL を推測）
-vim.keymap.set("n", "<Leader>s", function()
-  tmux_send(string.format("make -C %s submit-auto FILE=%s", env_dir, get_make_file()))
-end, { silent = true, desc = "AtCoder: テスト＋提出" })
-
--- Leader + u : テスト＋提出（クリップボードの URL を使う）
-vim.keymap.set("n", "<Leader>u", function()
-  local url = vim.fn.getreg("+"):gsub("%s+", "")
-  if url == "" then
-    print("クリップボードが空です")
-    return
-  end
-  tmux_send(string.format("make -C %s submit-url FILE=%s URL=%s", env_dir, get_make_file(), url))
-end, { silent = true, desc = "AtCoder: URL 指定で提出" })
-
--- Leader + b : バンドル（ライブラリ展開）してクリップボードにコピー
-vim.keymap.set("n", "<Leader>b", function()
-  vim.cmd("w")
-  vim.fn.system(string.format("make -C %s bundle FILE=%s", env_dir, get_make_file()))
-  local target = env_dir .. "/bundled.txt"
-  if vim.fn.filereadable(target) == 1 then
-    local lines = vim.fn.readfile(target)
-    vim.fn.setreg("+", table.concat(lines, "\n") .. "\n")
-    print("バンドル結果をクリップボードにコピーしました")
-  else
-    print("エラー: " .. target .. " が見つかりません")
-  end
-end, { silent = true, desc = "AtCoder: バンドル＋コピー" })
+-- 最後に project-local 設定を読むことで、必要ならグローバル設定を上書きできるようにする。
+load_project_config()

@@ -22,3 +22,10 @@
 	editor = nvim
 	# 改行コードの自動変換を無効にする（.gitattributes で管理するため）
 	autocrlf = false
+
+[alias]
+	# よく使う Git サブコマンドを短く打てるようにする
+	st = status -sb
+	ci = commit
+	br = branch
+	sw = switch
