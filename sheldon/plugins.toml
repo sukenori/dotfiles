@@ -1,0 +1,16 @@
+# sheldon（zsh プラグインマネージャ）の設定ファイル
+
+shell = "zsh"
+
+# zsh-syntax-highlighting — コマンド入力中に色がつく（正しいコマンドは緑、間違いは赤）
+[plugins.zsh-syntax-highlighting]
+github = "zsh-users/zsh-syntax-highlighting"
+
+# zsh-autosuggestions — 過去の履歴から候補をグレー文字で表示し、→キーで補完できる
+[plugins.zsh-autosuggestions]
+github = "zsh-users/zsh-autosuggestions"
+
+# pure — シンプルで高速なプロンプトテーマ
+#[plugins.pure]
+#github = "sindresorhus/pure"
+#apply = ["fpath"]

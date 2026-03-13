@@ -1,101 +1,80 @@
 #!/usr/bin/env bash
 # bash で実行する
 
+# パイプ途中も含めて失敗、未定義変数を検出
 set -euo pipefail
-# 失敗・未定義変数・パイプ途中失敗を検出する
 
-# APT の索引を更新する
-sudo apt-get update
+# パッケージ一覧の更新とアップグレード
+sudo apt-get update && sudo apt-get upgrade -y
+# HTTPS 通信の証明書 curl git をインストール
+sudo apt-get install -y ca-certificates curl git
 
-# HTTPS 通信の証明書を入れる
-sudo apt-get install -y ca-certificates
-
-# curl を入れる（zoxide インストーラ取得で使う）
-sudo apt-get install -y curl
-
-# git を入れる（dotfiles clone と plugin 更新で使う）
-sudo apt-get install -y git
-
-# GNU Stow を入れる（dotfiles のリンク展開で使う）
-sudo apt-get install -y stow
-
-# zsh を入れる
+# zsh をインストール
 sudo apt-get install -y zsh
 
-# zsh の補助プラグインを入れる
-sudo apt-get install -y zsh-autosuggestions zsh-syntax-highlighting
+# fzf（あいまい検索）をインストール
+mkdir -p "$HOME/.local/bin"
+FZF_VERSION=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "\K[^"]*' | sed 's/^v//')
+curl -Lo /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz"
+tar xzf /tmp/fzf.tar.gz -C "$HOME/.local/bin/" fzf
+chmod +x "$HOME/.local/bin/fzf"
+rm -f /tmp/fzf.tar.gz
 
-# ripgrep を入れる
-sudo apt-get install -y ripgrep
+# Rust をインストール
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+source "$HOME/.cargo/env"
+# sheldon（zsh プラグインマネージャ）をインストール
+cargo install sheldon
+# zoxide（ディレクトリ履歴の補助コマンド）をインストール
+cargo install zoxide --locked
 
-# fzf を入れる
-sudo apt-get install -y fzf
-
-# xz-utils を入れる（AtCoder 提出時の bundle 圧縮で使う）
-sudo apt-get install -y xz-utils
-
-# build-essential を入れる（Nim の C++ バックエンドで g++ が必要）
-sudo apt-get install -y build-essential
-
-# unzip を入れる
-sudo apt-get install -y unzip
-
-# 最新版 Neovim を入れる（vscode-neovim バックエンドは新しめの版が必要）
+# Neovim のインストール
 curl -Lo /tmp/nvim-linux-x86_64.tar.gz \
 	https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
 sudo tar xzf /tmp/nvim-linux-x86_64.tar.gz -C /opt
 sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
 rm -f /tmp/nvim-linux-x86_64.tar.gz
 
-# podman を入れる
-sudo apt-get install -y podman
+# ripgrep（ファイル内キーワード検索）を入れる
+sudo apt-get install -y ripgrep
 
-# distrobox を入れる
-sudo apt-get install -y distrobox
+# Node.js のインストール
+NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+')
+curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | sudo -E bash -
+sudo apt install -y nodejs
+
+# Docker Engine のインストール
+sudo apt-get install -y gpg
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # OpenSSH client を入れる
 sudo apt-get install -y openssh-client
 
-# zoxide を cargo なしで最新版導入する
-curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
-
-# nvim-cmp と LSP プラグインを入れる（あれば更新、なければ clone）
-mkdir -p "$HOME/.local/share/nvim/site/pack/cp/start"
-
-if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp/.git" ]; then
-	git -C "$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp" pull --ff-only
+# dotfiles リポジトリの取得・更新
+if [ ! -e "$HOME/dotfiles" ]; then
+  git clone https://github.com/sukenori/dotfiles.git "$HOME/dotfiles"
 else
-	git clone --depth 1 https://github.com/hrsh7th/nvim-cmp.git \
-		"$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp"
+  git -C "$HOME/dotfiles" pull --ff-only
 fi
 
-if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp/.git" ]; then
-	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp" pull --ff-only
-else
-	git clone --depth 1 https://github.com/hrsh7th/cmp-nvim-lsp.git \
-		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp"
-fi
+# 各設定ファイルへのシンボリックリンク作成
+mkdir -p "$HOME/.local/bin"
+mkdir -p "$HOME/.config/sheldon"
+ln -sf "$HOME/dotfiles/zsh/.zshrc" "$HOME/.zshrc"
+ln -sf "$HOME/dotfiles/sheldon/plugins.toml" "$HOME/.config/sheldon/plugins.toml"
+ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
+rm -rf "$HOME/.config/nvim"
+ln -s  "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
 
-if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer/.git" ]; then
-	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer" pull --ff-only
-else
-	git clone --depth 1 https://github.com/hrsh7th/cmp-buffer.git \
-		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer"
+# デフォルトシェルを zsh に変更
+if [ "$SHELL" != "$(command -v zsh)" ]; then
+  chsh -s "$(command -v zsh)"
 fi
-
-if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-path/.git" ]; then
-	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-path" pull --ff-only
-else
-	git clone --depth 1 https://github.com/hrsh7th/cmp-path.git \
-		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-path"
-fi
-
-if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig/.git" ]; then
-	git -C "$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig" pull --ff-only
-else
-	git clone --depth 1 https://github.com/neovim/nvim-lspconfig.git \
-		"$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig"
-fi
-
-# dotfiles のリンク展開を実行する（実行権限に依存しない）
-bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bootstrap.sh"
