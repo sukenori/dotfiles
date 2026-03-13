@@ -1,150 +1,101 @@
-#!/bin/bash
-# ===========================================================================
-# setup.sh — WSL (Ubuntu) 上のホスト環境を一発で構築するスクリプト
-#
-# 実行順序:
-#   1. Windows 側: windows/setup.ps1 を実行（WSL / フォントなど）
-#   2. WSL 側  : このスクリプトを実行（シェル・エディタ・コンテナ基盤）
-#
-# このスクリプトが行うこと:
-#   - Git / curl / OpenSSH client を入れ、設定取得の土台を作る
-#   - zsh / tmux / ripgrep / fzf を入れ、日常のターミナル操作を整える
-#   - Neovim と Node.js を入れ、エディタとプラグインの実行基盤を整える
-#   - Rust / Cargo と sheldon / zoxide を入れ、zsh 周辺ツールを整える
-#   - podman / distrobox とビルド用パッケージを入れ、コンテナ開発の土台を作る
-#   - dotfiles リポジトリをクローンし、各設定ファイルへリンクを張る
-#   - デフォルトシェルを zsh に変更する
-# ===========================================================================
+#!/usr/bin/env bash
+# bash で実行する
 
-# 安全側に倒す:
-#   -e        途中のコマンドが失敗したらその場で終了する
-#   -u        未定義変数の参照をエラーにする
-#   -o pipefail
-#             パイプラインの途中で失敗したコマンドも見逃さない
 set -euo pipefail
+# 失敗・未定義変数・パイプ途中失敗を検出する
 
-# ---------------------------------------------------------------------------
-# 1. 基本パッケージのインストール
-# ---------------------------------------------------------------------------
-echo "=== 1/7 基本パッケージのインストール ==="
-sudo apt update && sudo apt upgrade -y
+# APT の索引を更新する
+sudo apt-get update
 
-echo "--- 取得・同期に使う基本ツール ---"
-# curl: GitHub Release や各種セットアップスクリプトを取得する
-# git: dotfiles を clone / update する
-# openssh-client: GitHub を SSH で使う場合やリモート接続に使う
-sudo apt install -y \
-  curl git openssh-client
+# HTTPS 通信の証明書を入れる
+sudo apt-get install -y ca-certificates
 
-echo "--- シェルとターミナル操作を整えるツール ---"
-# zsh: 以後の標準シェル
-# tmux: ペイン分割やセッション復帰に使う
-# ripgrep: CLI や Neovim/Telescope で高速検索する
-sudo apt install -y \
-  zsh tmux ripgrep
+# curl を入れる（zoxide インストーラ取得で使う）
+sudo apt-get install -y curl
 
-echo "--- コンテナ開発の土台 ---"
-# podman: コンテナエンジン本体
-# distrobox: コンテナを普段使いの開発環境として扱いやすくする
-sudo apt install -y \
-  podman distrobox
+# git を入れる（dotfiles clone と plugin 更新で使う）
+sudo apt-get install -y git
 
-echo "--- ビルドに必要な開発ツールとヘッダ ---"
-# build-essential: gcc / g++ / make などの基本ビルドツール
-# libssl-dev: TLS/SSL を使う Rust crate やネイティブ依存のビルドに必要
-# pkg-config: ネイティブライブラリの場所を検出する
-sudo apt install -y \
-  build-essential libssl-dev pkg-config
+# GNU Stow を入れる（dotfiles のリンク展開で使う）
+sudo apt-get install -y stow
 
-# ---------------------------------------------------------------------------
-# 2. fzf のインストール
-#    履歴・ファイル・候補を対話的に絞り込むあいまい検索ツール
-#    この dotfiles では `.zshrc` から `fzf --zsh` を呼ぶため、
-#    Ubuntu の apt 版ではなく GitHub Release のバイナリを入れる
-# ---------------------------------------------------------------------------
-echo "=== 2/7 fzf のインストール ==="
-mkdir -p "$HOME/.local/bin"
-FZF_VERSION=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "\K[^"]*' | sed 's/^v//')
-curl -Lo /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz"
-tar xzf /tmp/fzf.tar.gz -C "$HOME/.local/bin/" fzf
-chmod +x "$HOME/.local/bin/fzf"
-rm -f /tmp/fzf.tar.gz
+# zsh を入れる
+sudo apt-get install -y zsh
 
-# ---------------------------------------------------------------------------
-# 3. Neovim 最新版のインストール
-#    メインのエディタとして使う
-#    WSL では AppImage (FUSE) より tarball 展開の方が扱いやすいため、
-#    その形で配置する
-# ---------------------------------------------------------------------------
-echo "=== 3/7 Neovim のインストール ==="
-cd /tmp
-curl -LO https://github.com/neovim/neovim/releases/download/nightly/nvim-linux-x86_64.tar.gz
-sudo rm -rf /opt/nvim-linux-x86_64
-sudo tar -C /opt -xzf nvim-linux-x86_64.tar.gz
+# zsh の補助プラグインを入れる
+sudo apt-get install -y zsh-autosuggestions zsh-syntax-highlighting
+
+# ripgrep を入れる
+sudo apt-get install -y ripgrep
+
+# fzf を入れる
+sudo apt-get install -y fzf
+
+# xz-utils を入れる（AtCoder 提出時の bundle 圧縮で使う）
+sudo apt-get install -y xz-utils
+
+# build-essential を入れる（Nim の C++ バックエンドで g++ が必要）
+sudo apt-get install -y build-essential
+
+# unzip を入れる
+sudo apt-get install -y unzip
+
+# 最新版 Neovim を入れる（vscode-neovim バックエンドは新しめの版が必要）
+curl -Lo /tmp/nvim-linux-x86_64.tar.gz \
+	https://github.com/neovim/neovim/releases/latest/download/nvim-linux-x86_64.tar.gz
+sudo tar xzf /tmp/nvim-linux-x86_64.tar.gz -C /opt
 sudo ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim
-rm -f nvim-linux-x86_64.tar.gz
+rm -f /tmp/nvim-linux-x86_64.tar.gz
 
-# ---------------------------------------------------------------------------
-# 4. Node.js (最新 LTS) のインストール
-#    GitHub Copilot 系プラグインや Node ベースのツールの実行基盤
-#    最新 LTS を NodeSource から導入する
-# ---------------------------------------------------------------------------
-echo "=== 4/7 Node.js のインストール ==="
-NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+')
-curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | sudo -E bash -
-sudo apt install -y nodejs
+# podman を入れる
+sudo apt-get install -y podman
 
-# ---------------------------------------------------------------------------
-# 5. Rust / Cargo と Cargo 製ツールのインストール
-#    Rust / Cargo: sheldon と zoxide を cargo install するための基盤
-#    sheldon = zsh プラグインマネージャ
-#    zoxide = `z foo` で履歴からディレクトリ移動できる補助コマンド
-# ---------------------------------------------------------------------------
-echo "=== 5/7 Rust / sheldon / zoxide のインストール ==="
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-# shellcheck disable=SC1091
-source "$HOME/.cargo/env"
-cargo install sheldon
-cargo install zoxide --locked
+# distrobox を入れる
+sudo apt-get install -y distrobox
 
-# ---------------------------------------------------------------------------
-# 6. dotfiles の配置
-# ---------------------------------------------------------------------------
-echo "=== 6/7 dotfiles の配置 ==="
+# OpenSSH client を入れる
+sudo apt-get install -y openssh-client
 
-echo "--- dotfiles リポジトリの取得・更新 ---"
-if [ ! -e "$HOME/dotfiles" ]; then
-  git clone https://github.com/sukenori/dotfiles.git "$HOME/dotfiles"
-elif [ -d "$HOME/dotfiles/.git" ]; then
-  git -C "$HOME/dotfiles" pull --ff-only
+# zoxide を cargo なしで最新版導入する
+curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
+
+# nvim-cmp と LSP プラグインを入れる（あれば更新、なければ clone）
+mkdir -p "$HOME/.local/share/nvim/site/pack/cp/start"
+
+if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp/.git" ]; then
+	git -C "$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp" pull --ff-only
 else
-  echo "エラー: $HOME/dotfiles が Git リポジトリではありません" >&2
-  exit 1
+	git clone --depth 1 https://github.com/hrsh7th/nvim-cmp.git \
+		"$HOME/.local/share/nvim/site/pack/cp/start/nvim-cmp"
 fi
 
-echo "--- 各設定ファイルへのシンボリックリンク作成 ---"
-# dotfiles 内の実体にリンクすることで、dotfiles を更新すれば設定も追随する
-mkdir -p "$HOME/.config/sheldon"
-mkdir -p "$HOME/.local/bin"
-
-ln -sf "$HOME/dotfiles/zsh/.zshrc"                        "$HOME/.zshrc"
-ln -sf "$HOME/dotfiles/git/.gitconfig"                     "$HOME/.gitconfig"
-ln -sf "$HOME/dotfiles/sheldon/plugins.toml"               "$HOME/.config/sheldon/plugins.toml"
-ln -sf "$HOME/dotfiles/tmux/.tmux.conf"                    "$HOME/.tmux.conf"
-
-# Neovim は複数ファイルで構成しているため、ディレクトリごと差し替える
-rm -rf "$HOME/.config/nvim"
-ln -s  "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
-
-# ---------------------------------------------------------------------------
-# 7. デフォルトシェルを zsh に変更
-# ---------------------------------------------------------------------------
-echo "=== 7/7 デフォルトシェルを zsh に変更 ==="
-if [ "$SHELL" != "$(command -v zsh)" ]; then
-  chsh -s "$(command -v zsh)"
-  echo "  → 次回ログインから zsh がデフォルトになります。"
+if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp/.git" ]; then
+	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp" pull --ff-only
+else
+	git clone --depth 1 https://github.com/hrsh7th/cmp-nvim-lsp.git \
+		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-nvim-lsp"
 fi
 
-echo ""
-echo "=== ホスト環境のセットアップが完了しました ==="
-echo "新しいシェルを開くと zsh 設定が反映されます"
+if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer/.git" ]; then
+	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer" pull --ff-only
+else
+	git clone --depth 1 https://github.com/hrsh7th/cmp-buffer.git \
+		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-buffer"
+fi
+
+if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/cmp-path/.git" ]; then
+	git -C "$HOME/.local/share/nvim/site/pack/cp/start/cmp-path" pull --ff-only
+else
+	git clone --depth 1 https://github.com/hrsh7th/cmp-path.git \
+		"$HOME/.local/share/nvim/site/pack/cp/start/cmp-path"
+fi
+
+if [ -d "$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig/.git" ]; then
+	git -C "$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig" pull --ff-only
+else
+	git clone --depth 1 https://github.com/neovim/nvim-lspconfig.git \
+		"$HOME/.local/share/nvim/site/pack/cp/start/nvim-lspconfig"
+fi
+
+# dotfiles のリンク展開を実行する（実行権限に依存しない）
+bash "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/bootstrap.sh"
