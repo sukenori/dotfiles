@@ -6,8 +6,8 @@ set -euo pipefail
 
 # パッケージ一覧の更新とアップグレード
 sudo apt-get update && sudo apt-get upgrade -y
-# HTTPS 通信の証明書 curl git をインストール
-sudo apt-get install -y ca-certificates curl git
+# HTTPS 通信の証明書 curl git と Rust ビルドに必要な依存をインストール
+sudo apt-get install -y ca-certificates curl git build-essential pkg-config libssl-dev
 
 # zsh をインストール
 sudo apt-get install -y zsh
