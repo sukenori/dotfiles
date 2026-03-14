@@ -55,6 +55,16 @@ echo \
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+# Docker を sudo なしで使えるように実行ユーザーを docker グループへ追加
+TARGET_USER="${SUDO_USER:-$USER}"
+if [ "$TARGET_USER" != "root" ] && getent group docker >/dev/null 2>&1; then
+  if ! id -nG "$TARGET_USER" | grep -qw docker; then
+    sudo usermod -aG docker "$TARGET_USER"
+    echo "$TARGET_USER を docker グループに追加しました。"
+    echo "反映には再ログインするか、newgrp docker を実行してください。"
+  fi
+fi
+
 # OpenSSH client を入れる
 sudo apt-get install -y openssh-client
 
@@ -75,6 +85,14 @@ rm -rf "$HOME/.config/nvim"
 ln -s  "$HOME/dotfiles/nvim" "$HOME/.config/nvim"
 
 # デフォルトシェルを zsh に変更
-if [ "$SHELL" != "$(command -v zsh)" ]; then
-  chsh -s "$(command -v zsh)"
+ZSH_PATH="$(command -v zsh)"
+if [ "$SHELL" != "$ZSH_PATH" ]; then
+  chsh -s "$ZSH_PATH"
+fi
+
+# 対話端末で実行したときは、現在のセッションも zsh に切り替える
+if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ] && [ "$SHELL" != "$ZSH_PATH" ] && [ "${NO_EXEC_ZSH:-0}" != "1" ]; then
+  echo "現在のセッションを zsh に切り替えます。"
+  echo "この zsh を終了すると元のシェルに戻ります。"
+  exec "$ZSH_PATH" -l
 fi

@@ -8,6 +8,7 @@ vim.opt.shiftwidth     = 2     -- 自動インデントの幅を半角2文字分
 vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変換する
 vim.opt.smartindent    = true   -- 改行時にインデントを自動調整する
 vim.opt.splitright     = true   -- 縦分割を右側に開く（CopilotChat 等）
+vim.opt.termguicolors  = true   -- 24bit カラーを有効にして配色を見やすくする
 vim.g.mapleader        = "\\" -- Vim の既定に合わせて Leader をバックスラッシュにする
 vim.g.maplocalleader   = ","   -- プロジェクトローカルのキーマップは , を起点にする
 
