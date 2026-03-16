@@ -15,7 +15,6 @@ return {
   config = function()
     local telescope = require("telescope")
     local builtin = require("telescope.builtin")
-    local uv = vim.uv or vim.loop
 
     telescope.setup({
       extensions = {
@@ -31,49 +30,55 @@ return {
     -- fzf 拡張を読み込む
     telescope.load_extension("fzf")
 
-    -- AtCoder 用の検索スコープ（ライブラリ/提出ログ）
-    -- ユーザー要望: cp-nim-lib(または cp-nim-log) と cp-solved-log を優先検索する
-    local function atcoder_scope_dirs()
-      local home = uv.os_homedir()
-      local candidates = {
-        home .. "/cp-nim-lib",
-        home .. "/cp-nim-log", -- 名前違いにも対応（存在すれば採用）
-        home .. "/cp-solved-log",
-      }
+    -- 優先検索スコープは外部ファイルで定義する。
+    -- 具体的な対象ディレクトリは各 setup.sh 側で管理する。
+    local function priority_scope_dirs()
+      local scope_file = vim.fn.stdpath("config") .. "/telescope_priority_dirs.txt"
+      if vim.fn.filereadable(scope_file) ~= 1 then
+        return {}
+      end
 
       local dirs = {}
-      for _, dir in ipairs(candidates) do
-        if vim.fn.isdirectory(dir) == 1 then
-          table.insert(dirs, dir)
+      local seen = {}
+
+      for _, line in ipairs(vim.fn.readfile(scope_file)) do
+        local dir = vim.trim(line)
+        if dir ~= "" and not dir:match("^#") then
+          dir = vim.fn.expand(dir)
+          if vim.fn.isdirectory(dir) == 1 and not seen[dir] then
+            seen[dir] = true
+            table.insert(dirs, dir)
+          end
         end
       end
+
       return dirs
     end
 
     -- キーマップ
-    -- 主要キーは AtCoder スコープを既定にし、対象ディレクトリが無い場合のみ通常検索へ戻す
+    -- 主要キーは優先スコープを既定にし、対象ディレクトリが無い場合のみ通常検索へ戻す
     vim.keymap.set("n", "<Leader>ff", function()
-      local dirs = atcoder_scope_dirs()
+      local dirs = priority_scope_dirs()
       if #dirs > 0 then
         builtin.find_files({
           search_dirs = dirs,
-          prompt_title = "AtCoder Scope Files",
+          prompt_title = "Priority Scope Files",
         })
       else
         builtin.find_files()
       end
-    end, { desc = "AtCoder スコープでファイル検索" })
+    end, { desc = "優先スコープでファイル検索" })
 
     vim.keymap.set("n", "<Leader>fg", function()
-      local dirs = atcoder_scope_dirs()
+      local dirs = priority_scope_dirs()
       if #dirs > 0 then
         builtin.live_grep({
           search_dirs = dirs,
-          prompt_title = "AtCoder Scope Grep",
+          prompt_title = "Priority Scope Grep",
         })
       else
         builtin.live_grep()
       end
-    end, { desc = "AtCoder スコープで全文検索" })
+    end, { desc = "優先スコープで全文検索" })
   end,
 }

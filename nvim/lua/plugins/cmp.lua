@@ -9,9 +9,9 @@
 return {
   "hrsh7th/nvim-cmp",
   dependencies = {
-    "hrsh7th/cmp-nvim-lsp",     -- LSP を補完ソースとして使うためのアダプタ
     "L3MON4D3/LuaSnip",         -- スニペットエンジン
     "saadparwaiz1/cmp_luasnip", -- LuaSnip を補完ソースとして使うためのアダプタ
+    "hrsh7th/cmp-nvim-lsp"      -- LSP を補完ソースとして使うためのアダプタ
   },
   config = function()
     local cmp = require("cmp")
@@ -57,8 +57,8 @@ return {
 
       -- 補完候補の情報源（上から優先度が高い）
       sources = cmp.config.sources({
-        { name = "nvim_lsp" }, -- LSP からの候補
         { name = "luasnip" },  -- スニペット
+        { name = "nvim_lsp" }, -- LSP からの候補
       }),
     })
   end,

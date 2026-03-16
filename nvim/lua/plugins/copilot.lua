@@ -191,7 +191,7 @@ return {
       { "nvim-lua/plenary.nvim" },
     },
     opts = {
-      system_prompt = "あなたは優秀なアシスタントです。簡潔に回答してください。マークダウンの強調記号やLaTeX表記は絶対に使用しないでください。",
+      system_prompt = "あなたは競技プログラミングのコーチ兼システム構築アシスタントです。簡潔に回答してください。マークダウンの強調記号やLaTeX表記は絶対に使用しないでください。",
       model = "gpt-4.1",      -- 既定モデル。使えるモデルは :CopilotChatModels で切り替えられる
       temperature = 0.1,       -- 低めにして、コード寄りの安定した応答にする
       auto_insert_mode = true, -- 開いたらすぐ入力できるようにする

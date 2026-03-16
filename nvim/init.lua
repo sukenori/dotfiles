@@ -9,10 +9,10 @@ vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変�
 vim.opt.smartindent    = true   -- 改行時にインデントを自動調整する
 vim.opt.splitright     = true   -- 縦分割を右側に開く（CopilotChat 等）
 vim.opt.termguicolors  = true   -- 24bit カラーを有効にして配色を見やすくする
-vim.g.mapleader        = "\\" -- Vim の既定に合わせて Leader をバックスラッシュにする
+vim.g.mapleader        = " "   -- Leader をスペースにする
 vim.g.maplocalleader   = ","   -- プロジェクトローカルのキーマップは , を起点にする
 
--- lazy.nvim（プラグインマネージャ）の自動インストールと起動
+-- lazy.nvim（プラグインマネージャ）のインストールと起動
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -22,13 +22,27 @@ if not vim.loop.fs_stat(lazypath) then
   })
 end
 vim.opt.rtp:prepend(lazypath)
--- lua/plugins/ フォルダ内の設定ファイルを自動で読み込む
+-- lua/plugins/ フォルダ内のプラグイン設定ファイルを読み込む
 require("lazy").setup({
   spec = { { import = "plugins" } },
 })
 
--- 現在の作業ディレクトリから親をたどり、ユーザー所有の .nvim.lua を1つだけ読む。
--- Neovim の trust 確認に依存せず、手元のプロジェクト固有設定だけを追加できるようにする。
+-- 共通キーマップ
+vim.keymap.set("n", "<Leader>w", "<Cmd>write<CR>", { silent = true, desc = "保存" })
+vim.keymap.set("n", "<Leader>q", "<Cmd>quit<CR>", { silent = true, desc = "終了" })
+vim.keymap.set("n", "<Leader>h", "<Cmd>nohlsearch<CR>", { silent = true, desc = "検索ハイライト解除" })
+vim.keymap.set("n", "<C-h>", "<C-w>h", { silent = true, desc = "左のウィンドウへ移動" })
+vim.keymap.set("n", "<C-j>", "<C-w>j", { silent = true, desc = "下のウィンドウへ移動" })
+vim.keymap.set("n", "<C-k>", "<C-w>k", { silent = true, desc = "上のウィンドウへ移動" })
+vim.keymap.set("n", "<C-l>", "<C-w>l", { silent = true, desc = "右のウィンドウへ移動" })
+
+-- LSP の状態確認・再起動
+vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart<CR>", { silent = true, desc = "LSP: 起動" })
+vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
+vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
+
+-- 現在の作業ディレクトリから親をたどり、ユーザー所有の .nvim.lua を1つだけ読む
+-- Neovim の trust 確認に依存せず、手元のプロジェクト固有設定だけを追加できるようにする
 local function load_project_config()
   local uv = vim.uv or vim.loop
   local cwd = uv.cwd()
@@ -52,20 +66,5 @@ local function load_project_config()
     cwd = parent
   end
 end
-
--- 共通キーマップ
-vim.keymap.set("n", "<Leader>w", "<Cmd>write<CR>", { silent = true, desc = "保存" })
-vim.keymap.set("n", "<Leader>q", "<Cmd>quit<CR>", { silent = true, desc = "終了" })
-vim.keymap.set("n", "<Leader>h", "<Cmd>nohlsearch<CR>", { silent = true, desc = "検索ハイライト解除" })
-vim.keymap.set("n", "<C-h>", "<C-w>h", { silent = true, desc = "左のウィンドウへ移動" })
-vim.keymap.set("n", "<C-j>", "<C-w>j", { silent = true, desc = "下のウィンドウへ移動" })
-vim.keymap.set("n", "<C-k>", "<C-w>k", { silent = true, desc = "上のウィンドウへ移動" })
-vim.keymap.set("n", "<C-l>", "<C-w>l", { silent = true, desc = "右のウィンドウへ移動" })
-
--- LSP の状態確認・再起動
-vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart<CR>", { silent = true, desc = "LSP: 起動" })
-vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
-vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
-
 -- 最後に project-local 設定を読むことで、必要ならグローバル設定を上書きできるようにする。
 load_project_config()

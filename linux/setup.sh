@@ -7,7 +7,7 @@ set -euo pipefail
 # パッケージ一覧の更新とアップグレード
 sudo apt-get update && sudo apt-get upgrade -y
 # HTTPS 通信の証明書 curl git と Rust ビルドに必要な依存をインストール
-sudo apt-get install -y ca-certificates curl git build-essential pkg-config libssl-dev
+sudo apt-get install -y ca-certificates curl git
 
 # zsh をインストール
 sudo apt-get install -y zsh
@@ -21,6 +21,7 @@ chmod +x "$HOME/.local/bin/fzf"
 rm -f /tmp/fzf.tar.gz
 
 # Rust をインストール
+sudo apt-get install -y build-essential pkg-config libssl-dev
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 source "$HOME/.cargo/env"
 # sheldon（zsh プラグインマネージャ）をインストール
@@ -38,7 +39,7 @@ rm -f /tmp/nvim-linux-x86_64.tar.gz
 # ripgrep（ファイル内キーワード検索）を入れる
 sudo apt-get install -y ripgrep
 
-# Node.js のインストール
+# Node.js のインストール（Copilotに必要）
 NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+')
 curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | sudo -E bash -
 sudo apt install -y nodejs
@@ -52,16 +53,17 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update
+sudo apt-get update 
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# Docker を sudo なしで使えるように実行ユーザーを docker グループへ追加
+# Docker を普段 sudo なしで使えるよう、実行ユーザーを docker グループへ追加
+# （反映は次回ログイン以降）
 TARGET_USER="${SUDO_USER:-$USER}"
 if [ "$TARGET_USER" != "root" ] && getent group docker >/dev/null 2>&1; then
   if ! id -nG "$TARGET_USER" | grep -qw docker; then
     sudo usermod -aG docker "$TARGET_USER"
     echo "$TARGET_USER を docker グループに追加しました。"
-    echo "反映には再ログインするか、newgrp docker を実行してください。"
+    echo "反映には再ログインするか newgrp docker が必要ですが、sudo docker ... でも実行できます。"
   fi
 fi
 
@@ -90,9 +92,8 @@ if [ "$SHELL" != "$ZSH_PATH" ]; then
   chsh -s "$ZSH_PATH"
 fi
 
-# 対話端末で実行したときは、現在のセッションも zsh に切り替える
-if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ] && [ "$SHELL" != "$ZSH_PATH" ] && [ "${NO_EXEC_ZSH:-0}" != "1" ]; then
+# 対話端末では、現在が zsh でなければその場で zsh へ切り替える
+if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ] && [ "$SHELL" != "$ZSH_PATH" ]; then
   echo "現在のセッションを zsh に切り替えます。"
-  echo "この zsh を終了すると元のシェルに戻ります。"
   exec "$ZSH_PATH" -l
 fi

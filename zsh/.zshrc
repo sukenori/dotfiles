@@ -1,10 +1,8 @@
 # デフォルトエディタ
 export EDITOR="nvim"
 
-# 色を有効にして見やすい prompt にする
-autoload -U colors && colors
-setopt prompt_subst
-PROMPT='%F{39}%n@%m%f %F{220}%~%f %# '
+# プロンプトは一般的なシンプル表示にする（Pure を使う場合はこの設定を外す）
+PROMPT='%n@%m %~ %# '
 
 # ls の色表示を有効にする
 if command -v dircolors >/dev/null 2>&1; then
@@ -17,9 +15,15 @@ alias la='ls -A --color=auto'
 # 補完システムを有効にし、候補一覧に色を付ける
 autoload -Uz compinit
 compinit
-zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+if [ -n "${LS_COLORS:-}" ]; then
+  zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+fi
 
 # fzf のキーバインドと補完を有効にする
+# 主なキー:
+#   Ctrl-T でファイル/ディレクトリを選んで現在のコマンドラインへ挿入
+#   Ctrl-R で履歴をあいまい検索して再利用
+#   Alt-C でディレクトリを選んでその場で移動（cd）
 if command -v fzf >/dev/null 2>&1; then
   if fzf --zsh >/dev/null 2>&1; then
     source <(fzf --zsh)
@@ -33,12 +37,14 @@ if command -v fzf >/dev/null 2>&1; then
 fi
 
 # zoxide を zsh に統合する
+# 主な使い方:
+#   z <一部の名前> で履歴から最適なディレクトリへ移動
+#   zi で候補を一覧選択して移動（fzf がある場合）
 if command -v zoxide >/dev/null 2>&1; then
   eval "$(zoxide init zsh)"
 fi
 
 # zsh 補助プラグインを読み込む（sheldon 管理）
-export ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 export ZSH_AUTOSUGGEST_USE_ASYNC=1
 if command -v sheldon >/dev/null 2>&1; then
   eval "$(sheldon source)"
