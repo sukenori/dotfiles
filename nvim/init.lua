@@ -2,7 +2,7 @@
 
 -- 基本設定（エディタの見た目と挙動）
 vim.opt.number         = true   -- 行番号を表示する
-vim.opt.relativenumber = true   -- カーソルからの相対行番号も表示する
+vim.opt.relativenumber = false  -- 相対行番号は既定で無効（エラーメッセージの行番号と合わせやすくする）
 vim.opt.tabstop        = 2     -- Tab キーの幅を半角2文字分にする
 vim.opt.shiftwidth     = 2     -- 自動インデントの幅を半角2文字分にする
 vim.opt.expandtab      = true   -- Tab キーを押したらスペースに変換する
@@ -11,6 +11,9 @@ vim.opt.splitright     = true   -- 縦分割を右側に開く（CopilotChat 等
 vim.opt.termguicolors  = true   -- 24bit カラーを有効にして配色を見やすくする
 vim.g.mapleader        = " "   -- Leader をスペースにする
 vim.g.maplocalleader   = ","   -- プロジェクトローカルのキーマップは , を起点にする
+
+-- 配色テーマと syntax ハイライトを明示的に有効化する。
+vim.cmd("syntax enable")
 
 -- lazy.nvim（プラグインマネージャ）のインストールと起動
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -31,6 +34,9 @@ require("lazy").setup({
 vim.keymap.set("n", "<Leader>w", "<Cmd>write<CR>", { silent = true, desc = "保存" })
 vim.keymap.set("n", "<Leader>q", "<Cmd>quit<CR>", { silent = true, desc = "終了" })
 vim.keymap.set("n", "<Leader>h", "<Cmd>nohlsearch<CR>", { silent = true, desc = "検索ハイライト解除" })
+vim.keymap.set("n", "<Leader>nr", function()
+  vim.o.relativenumber = not vim.o.relativenumber
+end, { silent = true, desc = "相対行番号の切替" })
 vim.keymap.set("n", "<C-h>", "<C-w>h", { silent = true, desc = "左のウィンドウへ移動" })
 vim.keymap.set("n", "<C-j>", "<C-w>j", { silent = true, desc = "下のウィンドウへ移動" })
 vim.keymap.set("n", "<C-k>", "<C-w>k", { silent = true, desc = "上のウィンドウへ移動" })

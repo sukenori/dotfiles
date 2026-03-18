@@ -13,6 +13,11 @@ winget install --id XPFFZHVGQWWLHB $WingetArgs #OneNote
 winget install --id Tailscale.Tailscale $WingetArgs
 winget install --id Google.QuickShare $WingetArgs
 
+# Windows が外部からの SSH 接続を受け入れられるようにする
+Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*' | Where-Object State -ne 'Installed' | Add-WindowsCapability -Online
+Start-Service sshd
+Set-Service -Name sshd -StartupType Automatic
+
 # Windows Terminal の設定ファイルを配置する
 $TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
 $TerminalSettingsPath = "$TerminalDir\settings.json"

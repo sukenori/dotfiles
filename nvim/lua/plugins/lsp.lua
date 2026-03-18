@@ -43,7 +43,7 @@ return {
           [vim.diagnostic.severity.HINT] = "H",
         },
       },
-      update_in_insert = false, -- 入力中は診断を更新せず、ノイズを減らす
+      update_in_insert = true,  -- 入力中も診断を更新して、位置と内容を追従させる
       severity_sort = true,   -- 重要度の高い診断を優先して扱う
       float = {
         border = "rounded",

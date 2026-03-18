@@ -24,6 +24,7 @@ fi
 #   Ctrl-T でファイル/ディレクトリを選んで現在のコマンドラインへ挿入
 #   Ctrl-R で履歴をあいまい検索して再利用
 #   Alt-C でディレクトリを選んでその場で移動（cd）
+export PATH="$HOME/.nimble/bin:$HOME/.local/bin:$PATH"
 if command -v fzf >/dev/null 2>&1; then
   if fzf --zsh >/dev/null 2>&1; then
     source <(fzf --zsh)
@@ -53,4 +54,3 @@ else
   [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
   [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
-export PATH="$HOME/.nimble/bin:$HOME/.local/bin:$PATH"

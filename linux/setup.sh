@@ -67,9 +67,6 @@ if [ "$TARGET_USER" != "root" ] && getent group docker >/dev/null 2>&1; then
   fi
 fi
 
-# OpenSSH client を入れる
-sudo apt-get install -y openssh-client
-
 # dotfiles リポジトリの取得・更新
 if [ ! -e "$HOME/dotfiles" ]; then
   git clone https://github.com/sukenori/dotfiles.git "$HOME/dotfiles"
