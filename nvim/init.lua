@@ -47,24 +47,19 @@ vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart<CR>", { silent = true, desc = "
 vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
 vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
 
--- 現在の作業ディレクトリから親をたどり、ユーザー所有の .nvim.lua を1つだけ読む
--- Neovim の trust 確認に依存せず、手元のプロジェクト固有設定だけを追加できるようにする
+-- 現在の作業ディレクトリから親をたどり、project-local の .nvim.lua を1つだけ読む
 local function load_project_config()
   local uv = vim.uv or vim.loop
   local cwd = uv.cwd()
-  local home = vim.fn.expand("~")
-  local uid = uv.getuid and uv.getuid() or nil
 
-  while cwd and cwd:sub(1, #home) == home do
+  while cwd and cwd ~= "" do
     local candidate = cwd .. "/.nvim.lua"
     local stat = uv.fs_stat(candidate)
-    if stat and stat.type == "file" and (uid == nil or stat.uid == uid) then
+    if stat and stat.type == "file" then
       dofile(candidate)
       return
     end
-    if cwd == home then
-      return
-    end
+
     local parent = vim.fn.fnamemodify(cwd, ":h")
     if parent == cwd or parent == "" then
       return
