@@ -1,9 +1,5 @@
--- ===========================================================================
 -- telescope.lua — Telescope（ファイル検索・全文検索）の設定
---
--- Leader + ff でファイル名検索、Leader + fg で全文検索ができる。
--- 内部で fzf アルゴリズムを使い、あいまい一致で高速に絞り込む。
--- ===========================================================================
+
 return {
   "nvim-telescope/telescope.nvim",
   tag = "0.1.8",
@@ -30,11 +26,44 @@ return {
     -- fzf 拡張を読み込む
     telescope.load_extension("fzf")
 
-    -- 優先検索スコープは外部ファイルで定義する。
-    -- 具体的な対象ディレクトリは各 setup.sh 側で管理する。
+    -- 優先検索スコープは project-local の .nvim/telescope_priority_dirs.txt で定義する。
+    -- 具体的な対象ディレクトリは各プロジェクトの setup.sh 側で管理する。
+    local function find_scope_file()
+      local uv = vim.uv or vim.loop
+
+      local function find_from(start_path)
+        if not start_path or start_path == "" then
+          return nil
+        end
+
+        local found = vim.fs.find(".nvim/telescope_priority_dirs.txt", {
+          path = start_path,
+          upward = true,
+        })[1]
+
+        if found and vim.fn.filereadable(found) == 1 then
+          return found
+        end
+
+        return nil
+      end
+
+      local bufname = vim.api.nvim_buf_get_name(0)
+      if bufname ~= "" then
+        local abs = vim.fn.fnamemodify(bufname, ":p")
+        local real = uv.fs_realpath(abs) or abs
+        local from_buf = find_from(vim.fs.dirname(real))
+        if from_buf then
+          return from_buf
+        end
+      end
+
+      return find_from(uv.cwd())
+    end
+
     local function priority_scope_dirs()
-      local scope_file = vim.fn.stdpath("config") .. "/telescope_priority_dirs.txt"
-      if vim.fn.filereadable(scope_file) ~= 1 then
+      local scope_file = find_scope_file()
+      if not scope_file then
         return {}
       end
 

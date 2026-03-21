@@ -1,34 +1,42 @@
--- colorscheme.lua — コード可読性のため、落ち着いた配色テーマを有効化する
+-- colorscheme.lua -- 黒背景で読みやすい配色
 return {
   {
-    "Mofiqul/vscode.nvim",
+    "folke/tokyonight.nvim",
     lazy = false,
     priority = 1000,
-    config = function()
-      require("vscode").setup({
-        style = "dark",
-        transparent = false,
-        italic_comments = false,
-        color_overrides = {
-          vscLineNumber = "#667081",
-          vscSelection = "#264f78",
-        },
-        group_overrides = {
-          Normal = { fg = "#e6edf3" },
-          Comment = { fg = "#7f8793", italic = false },
-          Keyword = { fg = "#c678dd" },
-          Statement = { fg = "#c678dd" },
-          Function = { fg = "#61afef" },
-          Identifier = { fg = "#d0d7de" },
-          Type = { fg = "#56b6c2" },
-          String = { fg = "#98c379" },
-          Number = { fg = "#d19a66" },
-          Boolean = { fg = "#d19a66" },
-          Special = { fg = "#e5c07b" },
-          Constant = { fg = "#e5c07b" },
-        },
-      })
-      vim.cmd.colorscheme("vscode")
+    opts = {
+      style = "night",
+      transparent = false,
+      terminal_colors = true,
+      on_colors = function(colors)
+        colors.bg = "#0b0f14"
+        colors.bg_dark = "#0b0f14"
+        colors.fg = "#e6edf3"
+      end,
+      on_highlights = function(hl, _)
+        hl.Normal = { fg = "#e6edf3", bg = "#0b0f14" }
+        hl.NormalFloat = { fg = "#e6edf3", bg = "#111722" }
+
+        -- ここで定義するのは言語非依存の標準ハイライトグループ。
+        -- syntax / Tree-sitter / LSP がこれらへリンクすれば同じ配色が適用される。
+        hl.Comment = { fg = "#7f8793", italic = false }
+        hl.Keyword = { fg = "#c678dd" }
+        hl.Function = { fg = "#61afef" }
+        hl.Conditional = { fg = "#e5c07b" }
+        hl.Repeat = { fg = "#d19a66" }
+        hl.String = { fg = "#98c379" }
+        hl.Boolean = { fg = "#56b6c2" }
+        hl.Special = { fg = "#e5c07b" }
+        hl.Operator = { fg = "#abb2bf" }
+        hl.PreCondit = { fg = "#d19a66" }
+        hl.Todo = { fg = "#0b0f14", bg = "#e5c07b", bold = true }
+        hl.Define = { fg = "#56b6c2" }
+        hl.Identifier = { fg = "#d0d7de" }
+      end,
+    },
+    config = function(_, opts)
+      require("tokyonight").setup(opts)
+      vim.cmd.colorscheme("tokyonight")
     end,
   },
 }

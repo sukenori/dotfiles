@@ -47,25 +47,84 @@ vim.keymap.set("n", "<Leader>ls", "<Cmd>LspStart<CR>", { silent = true, desc = "
 vim.keymap.set("n", "<Leader>li", "<Cmd>LspInfo<CR>", { silent = true, desc = "LSP: 状態確認" })
 vim.keymap.set("n", "<Leader>lr", "<Cmd>LspRestart<CR>", { silent = true, desc = "LSP: 再起動" })
 
--- 現在の作業ディレクトリから親をたどり、project-local の .nvim.lua を1つだけ読む
-local function load_project_config()
+-- path から親をたどり、project-local の .nvim.lua を探す
+local function find_project_config(path)
   local uv = vim.uv or vim.loop
-  local cwd = uv.cwd()
+  local dir = path
+  if not dir or dir == "" then
+    dir = uv.cwd()
+  end
 
-  while cwd and cwd ~= "" do
-    local candidate = cwd .. "/.nvim.lua"
+  while dir and dir ~= "" do
+    local candidate = dir .. "/.nvim.lua"
     local stat = uv.fs_stat(candidate)
     if stat and stat.type == "file" then
-      dofile(candidate)
-      return
+      return candidate
     end
 
-    local parent = vim.fn.fnamemodify(cwd, ":h")
-    if parent == cwd or parent == "" then
+    local parent = vim.fn.fnamemodify(dir, ":h")
+    if parent == dir or parent == "" then
+      break
+    end
+    dir = parent
+  end
+
+  return nil
+end
+
+-- すでに読み込んだ project-local 設定は二重適用しない
+local loaded_project_configs = {}
+
+-- バッファファイルの場所を優先して project-local の .nvim.lua を読む
+local function load_project_config(file_path)
+  local uv = vim.uv or vim.loop
+
+  local start_dir = nil
+  if file_path and file_path ~= "" then
+    local abs = vim.fn.fnamemodify(file_path, ":p")
+    local real = uv.fs_realpath(abs)
+    if real and real ~= "" then
+      start_dir = vim.fn.fnamemodify(real, ":h")
+    else
+      local parent = vim.fn.fnamemodify(abs, ":h")
+      start_dir = uv.fs_realpath(parent) or parent
+    end
+  else
+    start_dir = uv.cwd()
+  end
+
+  local candidate = find_project_config(start_dir)
+  if not candidate then
+    return false
+  end
+
+  if loaded_project_configs[candidate] then
+    return true
+  end
+
+  local ok, err = pcall(dofile, candidate)
+  if not ok then
+    vim.notify("project-local .nvim.lua の読み込みに失敗しました: " .. tostring(err), vim.log.levels.ERROR)
+    return false
+  end
+
+  loaded_project_configs[candidate] = true
+  return true
+end
+
+-- 最後に project-local 設定を読むことで、必要ならグローバル設定を上書きできるようにする。
+-- 起動引数のファイルを優先し、見つからない場合は cwd 基準で探す。
+load_project_config(vim.api.nvim_buf_get_name(0))
+load_project_config(nil)
+
+-- 途中で別プロジェクトのファイルを開いた場合も、そのルートの .nvim.lua を読み込む。
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
+  group = vim.api.nvim_create_augroup("UserProjectLocalConfigLoader", { clear = true }),
+  callback = function(ev)
+    local fname = vim.api.nvim_buf_get_name(ev.buf)
+    if fname == "" then
       return
     end
-    cwd = parent
-  end
-end
--- 最後に project-local 設定を読むことで、必要ならグローバル設定を上書きできるようにする。
-load_project_config()
+    load_project_config(fname)
+  end,
+})
