@@ -26,7 +26,7 @@ return {
     -- fzf 拡張を読み込む
     telescope.load_extension("fzf")
 
-    -- 優先検索スコープは project-local の .nvim/telescope_priority_dirs.txt で定義する。
+    -- 優先検索スコープは project-local の .nvim/ripgrep_scope_dirs.txt で定義する。
     -- 具体的な対象ディレクトリは各プロジェクトの setup.sh 側で管理する。
     local function find_scope_file()
       local uv = vim.uv or vim.loop
@@ -36,7 +36,7 @@ return {
           return nil
         end
 
-        local found = vim.fs.find(".nvim/telescope_priority_dirs.txt", {
+        local found = vim.fs.find(".nvim/ripgrep_scope_dirs.txt", {
           path = start_path,
           upward = true,
         })[1]

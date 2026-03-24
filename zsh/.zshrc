@@ -54,3 +54,6 @@ else
   [ -f /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh ] && source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
   [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
+
+# ブラウザは Windows 側で既定に設定されたブラウザを使用
+export BROWSER='/mnt/c/Windows/explorer.exe'

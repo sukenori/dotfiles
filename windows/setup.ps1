@@ -18,6 +18,14 @@ Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*' | Wher
 Start-Service sshd
 Set-Service -Name sshd -StartupType Automatic
 
+# SSH管理者用鍵ファイルの枠組み作成と権限設定（スマホからの安全な接続用）
+$targetDir = "$env:ProgramData\ssh"
+$targetKey = "$targetDir\administrators_authorized_keys"
+if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
+if (-not (Test-Path $targetKey)) { New-Item -ItemType File -Path $targetKey -Force | Out-Null }
+icacls.exe $targetKey /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
+Restart-Service sshd
+
 # Windows Terminal の設定ファイルを配置する
 $TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
 $TerminalSettingsPath = "$TerminalDir\settings.json"

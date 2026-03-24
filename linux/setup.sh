@@ -15,11 +15,11 @@ echo \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update 
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-# dotfiles ディレクトリ内の基盤となる Dockerfile をビルドする
+
+# dotfiles ディレクトリ内にある、基盤となる Dockerfile をビルド
 sudo docker build -t base-image -f "$HOME/dotfiles/Dockerfile" "$HOME/dotfiles"
 
-# Docker を普段 sudo なしで使えるよう、実行ユーザーを docker グループへ追加
-# （反映は次回ログイン以降）
+# Docker を普段 sudo なしで使えるよう、実行ユーザーを docker グループへ追加（反映は次回ログイン以降）
 TARGET_USER="${SUDO_USER:-$USER}"
 sudo usermod -aG docker "$TARGET_USER"
 echo "$TARGET_USER を docker グループに追加しました。"

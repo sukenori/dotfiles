@@ -1,4 +1,5 @@
--- colorscheme.lua -- 黒背景で読みやすい配色
+-- colorscheme.lua -- 黒背景でも読みやすい配色
+
 return {
   {
     "folke/tokyonight.nvim",
@@ -17,8 +18,8 @@ return {
         hl.Normal = { fg = "#e6edf3", bg = "#0b0f14" }
         hl.NormalFloat = { fg = "#e6edf3", bg = "#111722" }
 
-        -- ここで定義するのは言語非依存の標準ハイライトグループ。
-        -- syntax / Tree-sitter / LSP がこれらへリンクすれば同じ配色が適用される。
+        -- ここで定義するのは言語非依存の標準ハイライトグループ
+        -- syntax / Tree-sitter / LSP がこれらへリンクすれば同じ配色が適用される
         hl.Comment = { fg = "#7f8793", italic = false }
         hl.Keyword = { fg = "#c678dd" }
         hl.Function = { fg = "#61afef" }
@@ -32,6 +33,9 @@ return {
         hl.Todo = { fg = "#0b0f14", bg = "#e5c07b", bold = true }
         hl.Define = { fg = "#56b6c2" }
         hl.Identifier = { fg = "#d0d7de" }
+
+        -- 補完メニューの Keyword 表示はイタリックにしない
+        hl.CmpItemKindKeyword = { fg = "#c678dd", italic = false }
       end,
     },
     config = function(_, opts)
