@@ -13,6 +13,42 @@ winget install --id XPFFZHVGQWWLHB $WingetArgs #OneNote
 winget install --id Tailscale.Tailscale $WingetArgs
 winget install --id Google.QuickShare $WingetArgs
 
+# AdGuard Home を導入
+$AdGuardDir = "$env:ProgramFiles\AdGuardHome"
+if (-not (Test-Path $AdGuardDir)) {
+    New-Item -ItemType Directory -Path $AdGuardDir -Force | Out-Null
+    
+    $AgTempDir = "$env:TEMP\AdGuardHomeTemp"
+    if (-not (Test-Path $AgTempDir)) { New-Item -ItemType Directory -Path $AgTempDir | Out-Null }
+    
+    # GitHubの最新リリースからWindows 64bit用ZIPを取得
+    $AgReleaseUrl = "https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest"
+    $AgReleaseInfo = Invoke-RestMethod -Uri $AgReleaseUrl
+    $AgZipUrl = ($AgReleaseInfo.assets | Where-Object { $_.name -match "AdGuardHome_windows_amd64.zip" }).browser_download_url
+    
+    $AgZipPath = "$AgTempDir\AdGuardHome.zip"
+    Invoke-WebRequest -Uri $AgZipUrl -OutFile $AgZipPath
+    Expand-Archive -Path $AgZipPath -DestinationPath $AgTempDir -Force
+    
+    # 解凍したファイルを Program Files のフォルダにコピー
+    Copy-Item -Path "$AgTempDir\AdGuardHome\*" -Destination $AdGuardDir -Recurse -Force
+    
+    # Windowsのバックグラウンドサービスとしてインストールし、起動する
+    Start-Process -FilePath "$AdGuardDir\AdGuardHome.exe" -ArgumentList "-s install" -Wait -NoNewWindow
+    Start-Process -FilePath "$AdGuardDir\AdGuardHome.exe" -ArgumentList "-s start" -Wait -NoNewWindow
+    
+    # Tailscaleなど外部からDNSと管理画面を使えるようにファイアウォールを開放する
+    New-NetFirewallRule -DisplayName "AdGuard Home DNS UDP" -Direction Inbound -LocalPort 53 -Protocol UDP -Action Allow | Out-Null
+    New-NetFirewallRule -DisplayName "AdGuard Home DNS TCP" -Direction Inbound -LocalPort 53 -Protocol TCP -Action Allow | Out-Null
+    New-NetFirewallRule -DisplayName "AdGuard Home WebUI" -Direction Inbound -LocalPort 3000,80 -Protocol TCP -Action Allow | Out-Null
+    
+    # 一時フォルダを削除
+    Remove-Item -Path $AgTempDir -Recurse -Force
+    
+# Windows上のブラウザで http://localhost:3000 にアクセスし、初期設定（管理者ユーザー名とパスワードの作成）を行う
+# Tailscaleの管理画面（ブラウザ）を開き、DNS設定の Global nameservers に、このWindowsマシンのTailscale IPアドレスを追加して Override local DNS をオンにする
+}
+
 # Windows が外部からの SSH 接続を受け入れられるようにする
 Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*' | Where-Object State -ne 'Installed' | Add-WindowsCapability -Online
 Start-Service sshd

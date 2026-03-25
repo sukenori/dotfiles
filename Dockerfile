@@ -10,6 +10,9 @@ RUN apt-get update && apt-get install -y ca-certificates curl git
 # zsh をインストール
 RUN apt-get install -y zsh
 
+# tmux をインストール
+RUN apt-get install -y tmux
+
 # fzf（あいまい検索）をインストール
 RUN mkdir -p /root/.local/bin \
  && FZF_VERSION=$(curl -s https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "\K[^"]*' | sed 's/^v//') \
@@ -35,7 +38,11 @@ RUN curl -Lo /tmp/nvim-linux-x86_64.tar.gz https://github.com/neovim/neovim/rele
  && ln -sf /opt/nvim-linux-x86_64/bin/nvim /usr/local/bin/nvim \
  && rm -f /tmp/nvim-linux-x86_64.tar.gz
 
-# ripgrep（ファイル内キーワード検索）を入れる
+# neovim-remote（シェルから nvim プロセスを制御するコマンド）をインストール
+RUN apt-get install -y python3-pip
+ && pip3 install neovim-remote
+
+# ripgrep（ファイル内キーワード検索）をインストール
 RUN apt-get install -y ripgrep
 
 # Node.js のインストール

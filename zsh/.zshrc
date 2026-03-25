@@ -55,5 +55,21 @@ else
   [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
 
+# Neovim の既定ソケット。
+# 実際に nvr 転送するかどうかは NVIM_REMOTE_ENABLE=1 で明示制御する。
+export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+nvim() {
+  if [ "${NVIM_REMOTE_ENABLE:-0}" = "1" ] \
+    && command -v nvr >/dev/null 2>&1 \
+    && [ -S "${NVIM_LISTEN_ADDRESS}" ] \
+    && [ -n "${TMUX:-}" ]; then
+    nvr --server "${NVIM_LISTEN_ADDRESS}" --remote "$@"
+  else
+    # 条件未満なら通常の nvim を使う。
+    command nvim "$@"
+  fi
+
 # ブラウザは Windows 側で既定に設定されたブラウザを使用
 export BROWSER='/mnt/c/Windows/explorer.exe'
+
+}

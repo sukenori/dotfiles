@@ -40,10 +40,6 @@ vim.keymap.set("n", "<Leader>h", "<Cmd>nohlsearch<CR>", { silent = true, desc = 
 vim.keymap.set("n", "<Leader>nr", function()
   vim.o.relativenumber = not vim.o.relativenumber
 end, { silent = true, desc = "相対行番号の切替" })
-vim.keymap.set("n", "<C-h>", "<C-w>h", { silent = true, desc = "左のウィンドウへ移動" })
-vim.keymap.set("n", "<C-j>", "<C-w>j", { silent = true, desc = "下のウィンドウへ移動" })
-vim.keymap.set("n", "<C-k>", "<C-w>k", { silent = true, desc = "上のウィンドウへ移動" })
-vim.keymap.set("n", "<C-l>", "<C-w>l", { silent = true, desc = "右のウィンドウへ移動" })
 vim.keymap.set("i", "jj", "<Esc>", { silent = true, desc = "jjでノーマルモードへ戻る" })
 
 -- Leader 入力待機を用途別に切り替える（通常/ゆっくり入力）
@@ -73,165 +69,29 @@ vim.keymap.set("n", "<Leader>tm", function()
   end
 end, { silent = true, desc = "Timeout profile toggle" })
 
-local function clipboard_copy_text(text)
-  local in_docker = (vim.fn.filereadable("/.dockerenv") == 1)
-
-  if vim.fn.executable("termux-clipboard-set") == 1 then
-    vim.fn.system({ "termux-clipboard-set" }, text)
-    if vim.v.shell_error == 0 then
-      return true
-    end
-  end
-
-  if vim.fn.executable("powershell.exe") == 1 then
-    vim.fn.system({
-      "powershell.exe",
-      "-NoProfile",
-      "-NonInteractive",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      "$input | Set-Clipboard",
-    }, text)
-    if vim.v.shell_error == 0 then
-      return true
-    end
-  end
-
-  if vim.fn.executable("wl-copy") == 1 then
-    vim.fn.system({ "wl-copy" }, text)
-    if vim.v.shell_error == 0 then
-      return true
-    end
-  end
-
-  if vim.fn.executable("xclip") == 1 then
-    vim.fn.system({ "xclip", "-selection", "clipboard" }, text)
-    if vim.v.shell_error == 0 then
-      return true
-    end
-  end
-
+-- クリップボード連携は OSC52 ベースに統一する。
+-- これでコンテナ/SSH 越しでも `yy`, `p`, `"+y`, `"+p` を使いやすくする。
+do
   local ok_osc52, osc52 = pcall(require, "vim.ui.clipboard.osc52")
-  if ok_osc52 and type(osc52.copy) == "function" then
-    local ok = pcall(function()
-      osc52.copy("+")(vim.split(text, "\n", { plain = true }), "v")
-    end)
-    if ok then
-      return true
-    end
-  end
-
-  if in_docker then
-    return false, "コンテナ内では貼り付け元取得が制限されます。貼り付けは端末側 Ctrl+Shift+V を使ってください"
-  end
-  return false, "利用可能な clipboard backend が見つかりません"
-end
-
-local function clipboard_paste_text()
-  local in_docker = (vim.fn.filereadable("/.dockerenv") == 1)
-
-  if vim.fn.executable("termux-clipboard-get") == 1 then
-    local t = vim.fn.system({ "termux-clipboard-get" })
-    if vim.v.shell_error == 0 then
-      return t:gsub("\r\n", "\n")
-    end
-  end
-
-  if vim.fn.executable("powershell.exe") == 1 then
-    local t = vim.fn.system({
-      "powershell.exe",
-      "-NoProfile",
-      "-NonInteractive",
-      "-ExecutionPolicy",
-      "Bypass",
-      "-Command",
-      "Get-Clipboard -Raw",
-    })
-    if vim.v.shell_error == 0 then
-      return t:gsub("\r\n", "\n")
-    end
-  end
-
-  if vim.fn.executable("wl-paste") == 1 then
-    local t = vim.fn.system({ "wl-paste", "-n" })
-    if vim.v.shell_error == 0 then
-      return t
-    end
-  end
-
-  if vim.fn.executable("xclip") == 1 then
-    local t = vim.fn.system({ "xclip", "-o", "-selection", "clipboard" })
-    if vim.v.shell_error == 0 then
-      return t
-    end
-  end
-
-  if in_docker then
-    return nil, "コンテナ内 Neovim では外部 clipboard 取得が難しいため、端末側 Ctrl+Shift+V を使ってください"
-  end
-  return nil, "clipboard からの貼り付けに使える backend がありません"
-end
-
-local function paste_from_system_clipboard()
-  local text, err = clipboard_paste_text()
-  if not text then
-    vim.notify(err, vim.log.levels.WARN)
-    return
-  end
-
-  local bufnr = vim.api.nvim_get_current_buf()
-  local mode = vim.api.nvim_get_mode().mode
-  if mode:sub(1, 1) == "t" or vim.bo[bufnr].buftype == "terminal" then
-    local ok_job, job_id = pcall(vim.api.nvim_buf_get_var, bufnr, "terminal_job_id")
-    if not ok_job or type(job_id) ~= "number" then
-      vim.notify("ターミナルのジョブIDを取得できません", vim.log.levels.WARN)
-      return
-    end
-
-    vim.api.nvim_chan_send(job_id, text)
-    return
-  end
-
-  vim.api.nvim_paste(text, true, -1)
-end
-
-local function copy_to_system_clipboard()
-  local mode = vim.api.nvim_get_mode().mode
-  local text = ""
-  if mode == "v" or mode == "V" or mode == "\22" then
-    local esc = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
-    vim.api.nvim_feedkeys(esc, "nx", false)
-    text = table.concat(vim.fn.getregion(vim.fn.getpos("'<"), vim.fn.getpos("'>")), "\n")
-  else
-    text = vim.api.nvim_get_current_line()
-  end
-
-  local ok, err = clipboard_copy_text(text)
-  if not ok then
-    vim.notify(err, vim.log.levels.WARN)
+  if ok_osc52 and osc52 then
+    vim.g.clipboard = osc52
+    vim.opt.clipboard = "unnamedplus"
   end
 end
 
--- どこでも使えるクリップボード連携
--- <C-g>p は「Ctrl+g の後に p」を押す（同時押しではない）。
-vim.keymap.set({ "n", "i", "t" }, "<C-g>p", paste_from_system_clipboard, {
-  silent = true,
-  desc = "Paste from system clipboard",
-})
-vim.keymap.set({ "n", "v" }, "<C-g>y", copy_to_system_clipboard, {
+-- 端末で困ったら Ctrl+Shift+C / Ctrl+Shift+V を優先して使う。
+-- その上で、Neovim 内の明示ショートカットも用意する。
+vim.keymap.set({ "n", "v" }, "<Leader>y", '"+y', {
   silent = true,
   desc = "Copy to system clipboard",
 })
-
--- 押し間違いを減らすための別名（Space リーダー）
-vim.keymap.set({ "n", "i", "t" }, "<Leader>p", paste_from_system_clipboard, {
+vim.keymap.set("n", "<Leader>Y", '"+yy', {
+  silent = true,
+  desc = "Copy line to system clipboard",
+})
+vim.keymap.set({ "n", "v" }, "<Leader>p", '"+p', {
   silent = true,
   desc = "Paste from system clipboard",
-})
-vim.keymap.set({ "n", "v" }, "<Leader>y", copy_to_system_clipboard, {
-  silent = true,
-  desc = "Copy to system clipboard",
 })
 
 -- LSP の状態確認・再起動
