@@ -1,17 +1,22 @@
 # setup.ps1 — Windows 側の初期セットアップスクリプト（管理者 PowerShell で実行する）
 
 # winget 共通オプション
-$WingetArgs = "--exact --silent --accept-source-agreements --accept-package-agreements"
+$WingetArgs = @(
+    "--exact",
+    "--silent",
+    "--accept-source-agreements",
+    "--accept-package-agreements"
+)
 # 必要アプリを入れる
-winget install --id 9WZDNCRFJ4MV $WingetArgs #Lenobo Vantage
-winget install --id 9MVLWT5DMSKR $WingetArgs #Lenovo Pen Settings
-winget install --id Git.Git $WingetArgs
-winget install --id Google.Chrome $WingetArgs
-winget install --id Perplexity.Comet $WingetArgs
-winget install --id Brave.Brave $WingetArgs
-winget install --id XPFFZHVGQWWLHB $WingetArgs #OneNote
-winget install --id Tailscale.Tailscale $WingetArgs
-winget install --id Google.QuickShare $WingetArgs
+winget install --id 9WZDNCRFJ4MV @WingetArgs #Lenobo Vantage
+winget install --id 9MVLWT5DMSKR @WingetArgs #Lenovo Pen Settings
+winget install --id Git.Git @WingetArgs
+winget install --id Google.Chrome @WingetArgs
+winget install --id Perplexity.Comet @WingetArgs
+winget install --id Brave.Brave @WingetArgs
+winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote
+winget install --id Tailscale.Tailscale @WingetArgs
+winget install --id Google.QuickShare @WingetArgs
 
 # AdGuard Home を導入
 $AdGuardDir = "$env:ProgramFiles\AdGuardHome"
@@ -65,12 +70,28 @@ Restart-Service sshd
 # Windows Terminal の設定ファイルを配置する
 $TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
 $TerminalSettingsPath = "$TerminalDir\settings.json"
-$GitHubSettingsUrl = "https://raw.githubusercontent.com/sukenori/dotfiles/windows/settings.json"
+$GitHubSettingsUrls = @(
+    "https://raw.githubusercontent.com/sukenori/dotfiles/main/windows/settings.json",
+    "https://raw.githubusercontent.com/sukenori/dotfiles/master/windows/settings.json"
+)
 if (-not (Test-Path $TerminalDir)) {
     New-Item -ItemType Directory -Force -Path $TerminalDir
 }
-# GitHub から最新設定を取得して上書きする
-Invoke-WebRequest -Uri $GitHubSettingsUrl -OutFile $TerminalSettingsPath
+# GitHub から最新設定を取得して上書きする（main/master を順に試す）
+$Downloaded = $false
+foreach ($url in $GitHubSettingsUrls) {
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $TerminalSettingsPath -ErrorAction Stop
+        $Downloaded = $true
+        break
+    }
+    catch {
+        continue
+    }
+}
+if (-not $Downloaded) {
+    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
+}
 
 # HackGen Console NF フォントを入れる
 $TempDir = "$env:TEMP\HackGenFont"
@@ -97,4 +118,10 @@ foreach ($Font in $FontFiles) {
 Remove-Item -Path $TempDir -Recurse -Force
 
 # WSL で Ubuntu をセットアップ
-wsl --install -d Ubuntu
+$UbuntuExists = (wsl -l -q 2>$null) -contains "Ubuntu"
+if (-not $UbuntuExists) {
+    wsl --install -d Ubuntu
+}
+else {
+    Write-Host "Ubuntu は既にインストール済みのためスキップします。"
+}
