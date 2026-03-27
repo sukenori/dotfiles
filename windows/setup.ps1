@@ -16,6 +16,7 @@ winget install --id Perplexity.Comet @WingetArgs
 winget install --id Brave.Brave @WingetArgs
 winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote
 winget install --id Tailscale.Tailscale @WingetArgs
+winget install --id Microsoft.PowerToys @WingetArgs
 winget install --id Google.QuickShare @WingetArgs
 
 # AdGuard Home を導入
