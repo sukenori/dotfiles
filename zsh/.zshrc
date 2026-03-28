@@ -35,6 +35,11 @@ if command -v fzf >/dev/null 2>&1; then
     source /usr/share/doc/fzf/examples/key-bindings.zsh
     [ -f /usr/share/doc/fzf/examples/completion.zsh ] && source /usr/share/doc/fzf/examples/completion.zsh
   fi
+
+  # 配布差分で Ctrl-T が未設定になるケースの保険。
+  if typeset -f fzf-file-widget >/dev/null 2>&1; then
+    bindkey '^T' fzf-file-widget
+  fi
 fi
 
 # zoxide を zsh に統合する
@@ -55,21 +60,26 @@ else
   [ -f /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh ] && source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 fi
 
-# Neovim の既定ソケット。
-# 実際に nvr 転送するかどうかは NVIM_REMOTE_ENABLE=1 で明示制御する。
-export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+# Neovim リモート連携に使う既定ソケット。
+# ここでは export せず、必要時だけ子プロセスへ渡して起動警告を防ぐ。
+typeset -g NVIM_SOCKET_PATH="${NVIM_SOCKET_PATH:-/tmp/nvimsocket}"
 nvim() {
+  local socket="${NVIM_SOCKET_PATH:-/tmp/nvimsocket}"
+
   if [ "${NVIM_REMOTE_ENABLE:-0}" = "1" ] \
     && command -v nvr >/dev/null 2>&1 \
-    && [ -S "${NVIM_LISTEN_ADDRESS}" ] \
+    && [ -S "${socket}" ] \
     && [ -n "${TMUX:-}" ]; then
-    nvr --server "${NVIM_LISTEN_ADDRESS}" --remote "$@"
+    nvr --server "${socket}" --remote "$@"
   else
-    # 条件未満なら通常の nvim を使う。
-    command nvim "$@"
+    # リモート連携モード時は、この起動でのみソケットを渡す。
+    if [ "${NVIM_REMOTE_ENABLE:-0}" = "1" ] && [ -n "${TMUX:-}" ]; then
+      NVIM_LISTEN_ADDRESS="${socket}" command nvim "$@"
+    else
+      command nvim "$@"
+    fi
   fi
+}
 
 # ブラウザは Windows 側で既定に設定されたブラウザを使用
 export BROWSER='/mnt/c/Windows/explorer.exe'
-
-}
