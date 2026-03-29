@@ -8,10 +8,10 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update && apt-get install -y ca-certificates curl git
 
 # zsh をインストール
-RUN apt-get install -y zsh
+RUN apt-get update && apt-get install -y zsh
 
 # tmux をインストール
-RUN apt-get install -y tmux
+RUN apt-get update && apt-get install -y tmux
 
 # fzf（あいまい検索）をインストール
 RUN mkdir -p /root/.local/bin \
@@ -23,7 +23,7 @@ RUN mkdir -p /root/.local/bin \
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Rust をインストール
-RUN apt-get install -y build-essential pkg-config libssl-dev
+RUN apt-get update && apt-get install -y build-essential pkg-config libssl-dev
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y \
  && echo 'source "$HOME/.cargo/env"' >> /root/.bashrc
 ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"
@@ -39,11 +39,11 @@ RUN curl -Lo /tmp/nvim-linux-x86_64.tar.gz https://github.com/neovim/neovim/rele
  && rm -f /tmp/nvim-linux-x86_64.tar.gz
 
 # neovim-remote（シェルから nvim プロセスを制御するコマンド）をインストール
-RUN apt-get install -y python3-pip
+RUN apt-get update && apt-get install -y python3-pip \
  && pip3 install neovim-remote
 
 # ripgrep（ファイル内キーワード検索）をインストール
-RUN apt-get install -y ripgrep
+RUN apt-get update && apt-get install -y ripgrep
 
 # Node.js のインストール
 RUN NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+') \

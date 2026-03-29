@@ -85,8 +85,35 @@ return {
     },
     opts = {
       ensure_installed = { "codelldb" },
-      automatic_installation = true,
+      automatic_installation = false,
     },
+    config = function(_, opts)
+      local ok_mason_dap, mason_dap = pcall(require, "mason-nvim-dap")
+      if not ok_mason_dap then
+        return
+      end
+
+      -- 再読込や複数起動時の setup 再入で "already installing" を起こさない。
+      if vim.g.user_mason_nvim_dap_setup_done then
+        return
+      end
+      vim.g.user_mason_nvim_dap_setup_done = true
+
+      local ok_setup, err = pcall(mason_dap.setup, opts)
+      if ok_setup then
+        return
+      end
+
+      local msg = tostring(err)
+      if msg:find("Package is already installing", 1, true) then
+        vim.schedule(function()
+          vim.notify("mason-nvim-dap: codelldb install is already running", vim.log.levels.INFO)
+        end)
+        return
+      end
+
+      error(err)
+    end,
   },
   {
     "mfussenegger/nvim-dap",

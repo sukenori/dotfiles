@@ -8,9 +8,28 @@ return {
       "nvim-treesitter/nvim-treesitter-textobjects",
     },
     config = function()
-      local ts = require("nvim-treesitter.configs")
+      -- nvim-treesitter の API 変更に備えて、旧/新の setup 入口を両対応にする。
+      local ts_setup
+      do
+        local ok_configs, configs = pcall(require, "nvim-treesitter.configs")
+        if ok_configs and type(configs.setup) == "function" then
+          ts_setup = configs.setup
+        else
+          local ok_main, main = pcall(require, "nvim-treesitter")
+          if ok_main and type(main.setup) == "function" then
+            ts_setup = main.setup
+          end
+        end
+      end
 
-      ts.setup({
+      if type(ts_setup) ~= "function" then
+        vim.schedule(function()
+          vim.notify("nvim-treesitter の setup 関数を読み込めませんでした", vim.log.levels.ERROR)
+        end)
+        return
+      end
+
+      ts_setup({
         -- 汎用言語 + Nim を導入。必要なものは :TSInstall で追加可能。
         ensure_installed = {
           "bash",
