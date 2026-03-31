@@ -16,6 +16,13 @@ if [ -z "${HOST_VALUE}" ]; then
   read -r HOST_VALUE
 fi
 
+# 余計な空白を除去してから、user@host 形式のみ許可する。
+HOST_VALUE="$(printf '%s' "${HOST_VALUE}" | tr -d '[:space:]')"
+if [[ ! "${HOST_VALUE}" =~ ^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$ ]]; then
+  echo "エラー: CPDEV_HOST は user@host 形式で入力してください（例: itosu@100.65.96.6）" >&2
+  exit 1
+fi
+
 ENV_DIR_VALUE="${ATCODER_ENV_DIR:-~/atcoder-nim-env}"
 
 START_MARK="# >>> atcoder >>>"
