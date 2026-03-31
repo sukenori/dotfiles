@@ -8,6 +8,8 @@
         "size": 12
       },
       "colorScheme": "One Half Dark",
+      "opacity": 70,
+      "useAcrylic": false,
       "cursorShape": "filledBox",
       "bellStyle": "none"
     },

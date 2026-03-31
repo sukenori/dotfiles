@@ -9,7 +9,7 @@ set -euo pipefail
 TARGET_FILE="${1:-$HOME/.bashrc}"
 touch "$TARGET_FILE"
 
-# Termux 側は最小構成、SSH して PC 側の atcoder-nim-env/setup.sh attach を呼ぶだけ
+# Termux 側は最小限、SSH して PC 側の atcoder-nim-env/setup.sh attach を呼ぶだけ
 HOST_VALUE="${ATCODER_HOST:-}"
 if [ -z "${HOST_VALUE}" ]; then
   echo "CPDEV_HOST を入力してください（例: itosu@100.65.96.6）:"

@@ -10,9 +10,3 @@ github = "zsh-users/zsh-autosuggestions"
 # 注意: syntax-highlighting はできるだけ最後に読み込む
 [plugins.zsh-syntax-highlighting]
 github = "zsh-users/zsh-syntax-highlighting"
-
-# pure — Git 状態などを表示するシンプルなプロンプトテーマ
-# 使う場合は dotfiles/zsh/.zshrc の PROMPT 設定と併用せず、どちらか片方にする
-#[plugins.pure]
-#github = "sindresorhus/pure"
-#apply = ["fpath"]

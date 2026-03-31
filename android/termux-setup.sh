@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # SSHのインストール
 pkg update -y
 pkg install -y openssh
