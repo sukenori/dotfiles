@@ -1,4 +1,7 @@
-#!/usr/bin/env bash
+#!/usr/bin
+
+set -euo pipefail
+
 # SSHのインストール
 pkg update -y
 pkg install -y openssh
@@ -6,7 +9,21 @@ pkg install -y openssh
 # /.ssh にパスフレーズなしの鍵を作成
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
-ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -N ""
+
+KEY_PATH="$HOME/.ssh/id_ed25519"
+if [ -f "$KEY_PATH" ]; then
+	echo "既存の鍵が見つかりました: $KEY_PATH"
+	echo "上書きして再生成しますか? [y/N]"
+	read -r REPLY </dev/tty || REPLY="n"
+	if [[ "$REPLY" =~ ^[Yy]$ ]]; then
+		rm -f "$KEY_PATH" "$KEY_PATH.pub"
+		ssh-keygen -t ed25519 -f "$KEY_PATH" -N ""
+	else
+		echo "既存鍵をそのまま使います。"
+	fi
+else
+	ssh-keygen -t ed25519 -f "$KEY_PATH" -N ""
+fi
 
 # Windows へ鍵を送信するための準備
 echo "Windows のユーザー名を入力してください："
@@ -15,4 +32,4 @@ echo "Windows の Tailscale IP アドレス (100.xx.xx.xx) を入力してくだ
 read WIN_IP
 
 echo "Windows のログインパスワードを求められたら入力してください"
-ssh-copy-id ${WIN_USER}@${WIN_IP}
+ssh-copy-id "${WIN_USER}@${WIN_IP}"
