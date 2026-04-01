@@ -1,37 +1,23 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
-# SSHのインストール
-pkg update -y
 pkg install -y openssh termux-api
 
-# /.ssh にパスフレーズなしの鍵を作成
-mkdir -p ~/.ssh
-chmod 700 ~/.ssh
-touch ~/.ssh/config
-chmod 600 ~/.ssh/config
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
-KEY_PATH="$HOME/.ssh/id_ed25519"
-if [ -f "$KEY_PATH" ]; then
-	echo "既存の鍵が見つかりました: $KEY_PATH"
-	echo "上書きして再生成しますか? [y/N]"
-	read -r REPLY </dev/tty || REPLY="n"
-	if [[ "$REPLY" =~ ^[Yy]$ ]]; then
-		rm -f "$KEY_PATH" "$KEY_PATH.pub"
-		ssh-keygen -t ed25519 -f "$KEY_PATH" -N ""
-	else
-		echo "既存鍵をそのまま使います。"
-	fi
+KEY="$HOME/.ssh/id_ed25519"
+if [ -f "$KEY" ]; then
+  printf "既存の鍵があります。上書きしますか? [y/N]: "
+  read -r r </dev/tty || r=n
+  [[ "$r" =~ ^[Yy]$ ]] && rm -f "$KEY" "${KEY}.pub" && ssh-keygen -t ed25519 -f "$KEY" -N ""
 else
-	ssh-keygen -t ed25519 -f "$KEY_PATH" -N ""
+  ssh-keygen -t ed25519 -f "$KEY" -N ""
 fi
 
-# Windows へ鍵を送信するための準備
-echo "Windows のユーザー名を入力してください："
-read WIN_USER
-echo "Windows の Tailscale IP アドレス (100.xx.xx.xx) を入力してください："
-read WIN_IP
+printf "Windows ユーザー名: "
+read -r WIN_USER </dev/tty
+printf "Windows Tailscale IP (100.xx.xx.xx): "
+read -r WIN_IP </dev/tty
 
-echo "Windows のログインパスワードを求められたら入力してください"
 ssh-copy-id "${WIN_USER}@${WIN_IP}"
+echo "完了。次: bash ~/dotfiles/android/atcoder.sh"
