@@ -47,7 +47,7 @@ atcoder_env_dir="__ATCODER_ENV_DIR__"
 atcoder_ssh_common_opts=(-i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
 
 # Android 端末側で bundled.txt を確実にクリップボードへ取り込む。
-atcoder-copy() {
+atcoder_copy() {
   if ! command -v termux-clipboard-set >/dev/null 2>&1; then
     echo "エラー: termux-clipboard-set が見つかりません（Termux:API を確認してください）" >&2
     return 1
@@ -56,7 +56,7 @@ atcoder-copy() {
   local tmp_file
   tmp_file="$(mktemp)"
 
-  if ! ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''set -euo pipefail; test -s __ATCODER_ENV_DIR__/bundled.txt; cat __ATCODER_ENV_DIR__/bundled.txt'\''" > "$tmp_file"; then
+  if ! ssh "${atcoder_ssh_common_opts[@]}" "$atcoder_host" "wsl bash -lc 'set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt'" > "$tmp_file"; then
     rm -f "$tmp_file"
     echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行し、生成に成功しているか確認してください）" >&2
     return 1
@@ -95,7 +95,7 @@ atcoder-copy() {
   return 0
 }
 
-atcoder-watch-copy() {
+atcoder_watch_copy() {
   local interval="${1:-1}"
   local last_sig=""
 
@@ -105,7 +105,7 @@ atcoder-watch-copy() {
 
     if [ -n "$sig" ] && [ "$sig" != "$last_sig" ]; then
       last_sig="$sig"
-      if atcoder-copy >/dev/null 2>&1; then
+      if atcoder_copy >/dev/null 2>&1; then
         echo "[auto-copy] Android clipboard updated" >&2
       else
         echo "[auto-copy] copy failed (run atcoder-copy manually for details)" >&2
@@ -119,7 +119,7 @@ atcoder-watch-copy() {
 atcoder() {
   local watcher_pid=""
   if command -v termux-clipboard-set >/dev/null 2>&1; then
-    atcoder-watch-copy 1 &
+    atcoder_watch_copy 1 &
     watcher_pid=$!
   fi
 
@@ -133,6 +133,10 @@ atcoder() {
 
   return "$exit_code"
 }
+
+# bash 関数名はハイフンを使えないため、ユーザー向けには alias で公開する。
+alias atcoder-copy='atcoder_copy'
+alias atcoder-watch-copy='atcoder_watch_copy'
 # <<< atcoder <<<
 EOF
 
