@@ -4,7 +4,7 @@ set -euo pipefail
 
 # SSHのインストール
 pkg update -y
-pkg install -y openssh
+pkg install -y openssh api
 
 # /.ssh にパスフレーズなしの鍵を作成
 mkdir -p ~/.ssh

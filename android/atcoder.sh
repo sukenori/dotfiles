@@ -43,6 +43,9 @@ cat >> "$TARGET_FILE" <<'EOF'
 # Termux から PC の atcoder 開発環境へ一発接続する。
 # 2ペイン化の判断は PC 側 setup.sh attach が担当する。
 alias atcoder='ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -t __ATCODER_HOST__ "wsl bash -lc '\''cd __ATCODER_ENV_DIR__ && ./setup.sh attach'\''"'
+
+# Android 端末側で bundled.txt を確実にクリップボードへ取り込む。
+alias atcoder-copy='ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''cat __ATCODER_ENV_DIR__/bundled.txt'\''" | termux-clipboard-set'
 # <<< atcoder <<<
 EOF
 
@@ -51,3 +54,4 @@ sed -i "s|__ATCODER_HOST__|${HOST_VALUE}|g; s|__ATCODER_ENV_DIR__|${ENV_DIR_VALU
 # ~/.bashrc の反映を促す。
 echo "atcoder エイリアスを ${TARGET_FILE} に設定しました。"
 echo "source ${TARGET_FILE} 後に atcoder で接続できます。"
+echo "bundle 後に Android へ確実コピーするには atcoder-copy を使えます。"
