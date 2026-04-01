@@ -51,29 +51,46 @@ atcoder-copy() {
     return 1
   fi
 
-  local bundled_text
-  if ! bundled_text="$(ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''cat __ATCODER_ENV_DIR__/bundled.txt'\''" 2>/dev/null)"; then
-    echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行してください）" >&2
+  local tmp_file
+  tmp_file="$(mktemp)"
+
+  if ! ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''set -euo pipefail; test -s __ATCODER_ENV_DIR__/bundled.txt; cat __ATCODER_ENV_DIR__/bundled.txt'\''" > "$tmp_file"; then
+    rm -f "$tmp_file"
+    echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行し、生成に成功しているか確認してください）" >&2
     return 1
   fi
 
-  if [ -z "$bundled_text" ]; then
+  if [ ! -s "$tmp_file" ]; then
+    rm -f "$tmp_file"
     echo "エラー: bundled.txt が空です（先に ,b を実行してください）" >&2
     return 1
   fi
 
-  if printf '%s' "$bundled_text" | termux-clipboard-set; then
-    echo "Android クリップボードへコピーしました。"
-    return 0
+  if ! termux-clipboard-set < "$tmp_file"; then
+    rm -f "$tmp_file"
+    echo "エラー: termux-clipboard-set へのコピーに失敗しました（Termux:API の権限を確認してください）" >&2
+    return 1
   fi
 
-  if termux-clipboard-set "$bundled_text"; then
-    echo "Android クリップボードへコピーしました。"
-    return 0
+  local copied_bytes
+  copied_bytes="$(wc -c < "$tmp_file" | tr -d '[:space:]')"
+
+  if command -v termux-clipboard-get >/dev/null 2>&1 && command -v sha256sum >/dev/null 2>&1; then
+    local src_sha dst_sha
+    src_sha="$(sha256sum "$tmp_file" | awk '{print $1}')"
+    dst_sha="$(termux-clipboard-get | sha256sum | awk '{print $1}')"
+    rm -f "$tmp_file"
+    if [ "$src_sha" = "$dst_sha" ]; then
+      echo "Android クリップボードへコピーしました（検証OK, ${copied_bytes} bytes）。"
+      return 0
+    fi
+    echo "警告: clipboard 反映確認に失敗しました（コピー要求は送信済み, ${copied_bytes} bytes）" >&2
+    return 1
   fi
 
-  echo "エラー: termux-clipboard-set へのコピーに失敗しました" >&2
-  return 1
+  rm -f "$tmp_file"
+  echo "Android クリップボードへコピーしました（${copied_bytes} bytes）。"
+  return 0
 }
 # <<< atcoder <<<
 EOF
