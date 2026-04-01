@@ -77,13 +77,34 @@ atcoder_copy_impl() {
   fi
 
   if ! termux-clipboard-set < "$tmp_file"; then
+    # 一部環境で stdin 経路が不安定な場合に備えて引数経路も試す。
+    if ! termux-clipboard-set "$(cat "$tmp_file")"; then
+      rm -f "$tmp_file"
+      echo "エラー: termux-clipboard-set へのコピーに失敗しました" >&2
+      return 1
+    fi
+  fi
+
+  local copied_bytes
+  copied_bytes="$(wc -c < "$tmp_file" | tr -d '[:space:]')"
+
+  if command -v termux-clipboard-get >/dev/null 2>&1 && command -v sha256sum >/dev/null 2>&1; then
+    local src_sha dst_sha
+    src_sha="$(sha256sum "$tmp_file" | awk '{print $1}')"
+    dst_sha="$(termux-clipboard-get | sha256sum | awk '{print $1}')"
     rm -f "$tmp_file"
-    echo "エラー: termux-clipboard-set へのコピーに失敗しました" >&2
-    return 1
+
+    if [ "$src_sha" != "$dst_sha" ]; then
+      echo "エラー: Android クリップボード反映の検証に失敗しました（${copied_bytes} bytes）" >&2
+      return 1
+    fi
+
+    echo "Android クリップボードへコピーしました（検証OK, ${copied_bytes} bytes）。"
+    return 0
   fi
 
   rm -f "$tmp_file"
-  echo "Android クリップボードへコピーしました。"
+  echo "Android クリップボードへコピーしました（${copied_bytes} bytes）。"
 }
 
 atcoder_watch_copy_impl() {
@@ -96,10 +117,11 @@ atcoder_watch_copy_impl() {
 
     if [ -n "$mtime" ] && [ "$mtime" != "$last_mtime" ]; then
       last_mtime="$mtime"
-      if atcoder_copy_impl >/dev/null 2>&1; then
-        echo "[auto-copy] Android clipboard updated" >&2
+      local copy_msg
+      if copy_msg="$(atcoder_copy_impl 2>&1)"; then
+        echo "[auto-copy] ${copy_msg}" >&2
       else
-        echo "[auto-copy] copy failed (run atcoder-copy for details)" >&2
+        echo "[auto-copy] FAILED: ${copy_msg}" >&2
       fi
     fi
 
