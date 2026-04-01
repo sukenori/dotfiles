@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-TARGET_FILE="${1:-$HOME/.bashrc}"
+TARGET_BASHRC="${1:-$HOME/.bashrc}"
+RUNTIME_FILE="$HOME/.config/atcoder-termux.sh"
 SSH_CONFIG_FILE="$HOME/.ssh/config"
 
-touch "$TARGET_FILE"
-mkdir -p "$HOME/.ssh"
-touch "$SSH_CONFIG_FILE"
+mkdir -p "$HOME/.config" "$HOME/.ssh"
+touch "$TARGET_BASHRC" "$SSH_CONFIG_FILE"
 chmod 700 "$HOME/.ssh"
 chmod 600 "$SSH_CONFIG_FILE"
 
@@ -48,11 +48,10 @@ rewrite_block() {
   mv "$tmp_file" "$file"
 }
 
-SHELL_BLOCK_FILE="$(mktemp)"
-cat > "$SHELL_BLOCK_FILE" <<'BLOCK'
+RUNTIME_TMP="$(mktemp)"
+cat > "$RUNTIME_TMP" <<'RUNTIME_BLOCK'
+#!/usr/bin/env bash
 
-# >>> atcoder >>>
-# Termux -> SSH(Windows/WSL) -> atcoder-nim-env
 atcoder_env_dir="__ATCODER_ENV_DIR__"
 atcoder_auto_copy="${ATCODER_AUTO_COPY:-1}"
 
@@ -65,7 +64,7 @@ atcoder_copy_impl() {
   local tmp_file
   tmp_file="$(mktemp)"
 
-  if ! ssh cpdev "wsl bash -lc 'set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt'" > "$tmp_file"; then
+  if ! ssh cpdev "wsl bash -lc \"set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt\"" > "$tmp_file"; then
     rm -f "$tmp_file"
     echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行してください）" >&2
     return 1
@@ -93,7 +92,7 @@ atcoder_watch_copy_impl() {
 
   while :; do
     local mtime
-    mtime="$(ssh cpdev "wsl bash -lc 'if [ -s ${atcoder_env_dir}/bundled.txt ]; then stat -c %Y ${atcoder_env_dir}/bundled.txt; fi'" 2>/dev/null || true)"
+    mtime="$(ssh cpdev "wsl bash -lc \"if [ -s ${atcoder_env_dir}/bundled.txt ]; then stat -c %Y ${atcoder_env_dir}/bundled.txt; fi\"" 2>/dev/null || true)"
 
     if [ -n "$mtime" ] && [ "$mtime" != "$last_mtime" ]; then
       last_mtime="$mtime"
@@ -130,11 +129,23 @@ atcoder_impl() {
 alias atcoder='atcoder_impl'
 alias atcoder-copy='atcoder_copy_impl'
 alias atcoder-watch-copy='atcoder_watch_copy_impl'
-# <<< atcoder <<<
-BLOCK
+RUNTIME_BLOCK
+
+sed -i "s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$RUNTIME_TMP"
+bash -n "$RUNTIME_TMP"
+mv "$RUNTIME_TMP" "$RUNTIME_FILE"
+chmod 600 "$RUNTIME_FILE"
+
+SHELL_BLOCK_FILE="$(mktemp)"
+cat > "$SHELL_BLOCK_FILE" <<SHELL_BLOCK
+
+$SHELL_START
+[ -f "\$HOME/.config/atcoder-termux.sh" ] && source "\$HOME/.config/atcoder-termux.sh"
+$SHELL_END
+SHELL_BLOCK
 
 SSH_BLOCK_FILE="$(mktemp)"
-cat > "$SSH_BLOCK_FILE" <<'BLOCK'
+cat > "$SSH_BLOCK_FILE" <<'SSH_BLOCK'
 
 # >>> atcoder-ssh >>>
 Host cpdev
@@ -153,17 +164,15 @@ Host atcoder
   RequestTTY yes
   RemoteCommand wsl bash -lc "cd __ATCODER_ENV_DIR__ && ./setup.sh attach"
 # <<< atcoder-ssh <<<
-BLOCK
+SSH_BLOCK
 
-sed -i "s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$SHELL_BLOCK_FILE"
 sed -i "s|__ATCODER_HOSTNAME__|${ATCODER_HOSTNAME}|g; s|__ATCODER_USER__|${ATCODER_USER}|g; s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$SSH_BLOCK_FILE"
 
-rewrite_block "$TARGET_FILE" "$SHELL_START" "$SHELL_END" "$SHELL_BLOCK_FILE"
+rewrite_block "$TARGET_BASHRC" "$SHELL_START" "$SHELL_END" "$SHELL_BLOCK_FILE"
 rewrite_block "$SSH_CONFIG_FILE" "$SSH_START" "$SSH_END" "$SSH_BLOCK_FILE"
 
 rm -f "$SHELL_BLOCK_FILE" "$SSH_BLOCK_FILE"
 
-echo "atcoder 設定を ${TARGET_FILE} に更新しました。"
+echo "atcoder 設定を ${TARGET_BASHRC} と ${RUNTIME_FILE} に更新しました。"
 echo "SSH 設定を ${SSH_CONFIG_FILE} に更新しました。"
-echo "source ${TARGET_FILE} 後に atcoder で接続できます。"
-echo "接続中は ,b 後の bundled 更新で自動コピーが動作します（ATCODER_AUTO_COPY=1）。"
+echo "source ${TARGET_BASHRC} 後に atcoder で接続できます。"
