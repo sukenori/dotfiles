@@ -1,14 +1,16 @@
-#!/usr/bin
+#!/usr/bin/env bash
 
 set -euo pipefail
 
 # SSHのインストール
 pkg update -y
-pkg install -y openssh api
+pkg install -y openssh termux-api
 
 # /.ssh にパスフレーズなしの鍵を作成
 mkdir -p ~/.ssh
 chmod 700 ~/.ssh
+touch ~/.ssh/config
+chmod 600 ~/.ssh/config
 
 KEY_PATH="$HOME/.ssh/id_ed25519"
 if [ -f "$KEY_PATH" ]; then

@@ -1,50 +1,60 @@
 #!/usr/bin/env bash
-# bash で実行する
-
 set -euo pipefail
 
-# 生成先（既定: ~/.bashrc）
 TARGET_FILE="${1:-$HOME/.bashrc}"
-touch "$TARGET_FILE"
+SSH_CONFIG_FILE="$HOME/.ssh/config"
 
-# 接続先 host（user@host 形式）
+touch "$TARGET_FILE"
+mkdir -p "$HOME/.ssh"
+touch "$SSH_CONFIG_FILE"
+chmod 700 "$HOME/.ssh"
+chmod 600 "$SSH_CONFIG_FILE"
+
 HOST_VALUE="${ATCODER_HOST:-}"
 if [ -z "$HOST_VALUE" ]; then
   echo "CPDEV_HOST を入力してください（例: itosu@100.65.96.6）:"
   read -r HOST_VALUE
 fi
+
 HOST_VALUE="$(printf '%s' "$HOST_VALUE" | tr -d '[:space:]')"
 if [[ ! "$HOST_VALUE" =~ ^[A-Za-z0-9._-]+@[A-Za-z0-9._-]+$ ]]; then
   echo "エラー: CPDEV_HOST は user@host 形式で入力してください（例: itosu@100.65.96.6）" >&2
   exit 1
 fi
 
-# WSL 側 atcoder-nim-env パス
+ATCODER_USER="${HOST_VALUE%@*}"
+ATCODER_HOSTNAME="${HOST_VALUE#*@}"
 ENV_DIR_VALUE="${ATCODER_ENV_DIR:-~/atcoder-nim-env}"
 
-START_MARK="# >>> atcoder >>>"
-END_MARK="# <<< atcoder <<<"
+SHELL_START="# >>> atcoder >>>"
+SHELL_END="# <<< atcoder <<<"
+SSH_START="# >>> atcoder-ssh >>>"
+SSH_END="# <<< atcoder-ssh <<<"
 
-# 既存 managed block を消して再生成（重複防止）
-TMP_FILE="$(mktemp)"
-awk -v s="$START_MARK" -v e="$END_MARK" '
-  $0 == s { in_block=1; next }
-  $0 == e { in_block=0; next }
-  !in_block { print }
-' "$TARGET_FILE" > "$TMP_FILE"
-mv "$TMP_FILE" "$TARGET_FILE"
+rewrite_block() {
+  local file="$1"
+  local start="$2"
+  local end="$3"
+  local content_file="$4"
 
-cat >> "$TARGET_FILE" <<'BLOCK'
+  local tmp_file
+  tmp_file="$(mktemp)"
+  awk -v s="$start" -v e="$end" '
+    $0 == s { in_block=1; next }
+    $0 == e { in_block=0; next }
+    !in_block { print }
+  ' "$file" > "$tmp_file"
+  cat "$content_file" >> "$tmp_file"
+  mv "$tmp_file" "$file"
+}
+
+SHELL_BLOCK_FILE="$(mktemp)"
+cat > "$SHELL_BLOCK_FILE" <<'BLOCK'
 
 # >>> atcoder >>>
 # Termux -> SSH(Windows/WSL) -> atcoder-nim-env
-atcoder_host="__ATCODER_HOST__"
 atcoder_env_dir="__ATCODER_ENV_DIR__"
 atcoder_auto_copy="${ATCODER_AUTO_COPY:-1}"
-
-_atcoder_ssh() {
-  ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 "$@"
-}
 
 atcoder_copy_impl() {
   if ! command -v termux-clipboard-set >/dev/null 2>&1; then
@@ -55,7 +65,7 @@ atcoder_copy_impl() {
   local tmp_file
   tmp_file="$(mktemp)"
 
-  if ! _atcoder_ssh "$atcoder_host" "wsl bash -lc 'set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt'" > "$tmp_file"; then
+  if ! ssh cpdev "wsl bash -lc 'set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt'" > "$tmp_file"; then
     rm -f "$tmp_file"
     echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行してください）" >&2
     return 1
@@ -75,7 +85,6 @@ atcoder_copy_impl() {
 
   rm -f "$tmp_file"
   echo "Android クリップボードへコピーしました。"
-  return 0
 }
 
 atcoder_watch_copy_impl() {
@@ -84,7 +93,7 @@ atcoder_watch_copy_impl() {
 
   while :; do
     local mtime
-    mtime="$(_atcoder_ssh "$atcoder_host" "wsl bash -lc 'if [ -s ${atcoder_env_dir}/bundled.txt ]; then stat -c %Y ${atcoder_env_dir}/bundled.txt; fi'" 2>/dev/null || true)"
+    mtime="$(ssh cpdev "wsl bash -lc 'if [ -s ${atcoder_env_dir}/bundled.txt ]; then stat -c %Y ${atcoder_env_dir}/bundled.txt; fi'" 2>/dev/null || true)"
 
     if [ -n "$mtime" ] && [ "$mtime" != "$last_mtime" ]; then
       last_mtime="$mtime"
@@ -99,7 +108,7 @@ atcoder_watch_copy_impl() {
   done
 }
 
-atcoder() {
+atcoder_impl() {
   local watcher_pid=""
 
   if [ "$atcoder_auto_copy" = "1" ] && command -v termux-clipboard-set >/dev/null 2>&1; then
@@ -107,7 +116,7 @@ atcoder() {
     watcher_pid=$!
   fi
 
-  _atcoder_ssh -t "$atcoder_host" "wsl bash -lc 'cd ${atcoder_env_dir} && ./setup.sh attach'"
+  ssh atcoder
   local exit_code=$?
 
   if [ -n "$watcher_pid" ]; then
@@ -118,13 +127,43 @@ atcoder() {
   return "$exit_code"
 }
 
+alias atcoder='atcoder_impl'
 alias atcoder-copy='atcoder_copy_impl'
 alias atcoder-watch-copy='atcoder_watch_copy_impl'
 # <<< atcoder <<<
 BLOCK
 
-sed -i "s|__ATCODER_HOST__|${HOST_VALUE}|g; s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$TARGET_FILE"
+SSH_BLOCK_FILE="$(mktemp)"
+cat > "$SSH_BLOCK_FILE" <<'BLOCK'
+
+# >>> atcoder-ssh >>>
+Host cpdev
+  HostName __ATCODER_HOSTNAME__
+  User __ATCODER_USER__
+  IdentityFile ~/.ssh/id_ed25519
+  ServerAliveInterval 15
+  ServerAliveCountMax 3
+
+Host atcoder
+  HostName __ATCODER_HOSTNAME__
+  User __ATCODER_USER__
+  IdentityFile ~/.ssh/id_ed25519
+  ServerAliveInterval 15
+  ServerAliveCountMax 3
+  RequestTTY yes
+  RemoteCommand wsl bash -lc "cd __ATCODER_ENV_DIR__ && ./setup.sh attach"
+# <<< atcoder-ssh <<<
+BLOCK
+
+sed -i "s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$SHELL_BLOCK_FILE"
+sed -i "s|__ATCODER_HOSTNAME__|${ATCODER_HOSTNAME}|g; s|__ATCODER_USER__|${ATCODER_USER}|g; s|__ATCODER_ENV_DIR__|${ENV_DIR_VALUE}|g" "$SSH_BLOCK_FILE"
+
+rewrite_block "$TARGET_FILE" "$SHELL_START" "$SHELL_END" "$SHELL_BLOCK_FILE"
+rewrite_block "$SSH_CONFIG_FILE" "$SSH_START" "$SSH_END" "$SSH_BLOCK_FILE"
+
+rm -f "$SHELL_BLOCK_FILE" "$SSH_BLOCK_FILE"
 
 echo "atcoder 設定を ${TARGET_FILE} に更新しました。"
+echo "SSH 設定を ${SSH_CONFIG_FILE} に更新しました。"
 echo "source ${TARGET_FILE} 後に atcoder で接続できます。"
 echo "接続中は ,b 後の bundled 更新で自動コピーが動作します（ATCODER_AUTO_COPY=1）。"
