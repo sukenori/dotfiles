@@ -44,10 +44,22 @@ cat >> "$TARGET_FILE" <<'EOF'
 # 2ペイン化の判断は PC 側 setup.sh attach が担当する。
 atcoder_host="__ATCODER_HOST__"
 atcoder_env_dir="__ATCODER_ENV_DIR__"
-atcoder_ssh_common_opts=(-i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
+
+_atcoder_ssh() {
+  ssh \
+    -i "$HOME/.ssh/id_ed25519" \
+    -o ServerAliveInterval=15 \
+    -o ServerAliveCountMax=3 \
+    "$@"
+}
+
+_atcoder_wsl() {
+  local remote_cmd="$1"
+  _atcoder_ssh "$atcoder_host" "wsl bash -lc $(printf '%q' "$remote_cmd")"
+}
 
 # Android 端末側で bundled.txt を確実にクリップボードへ取り込む。
-atcoder_copy() {
+atcoder_copy_impl() {
   if ! command -v termux-clipboard-set >/dev/null 2>&1; then
     echo "エラー: termux-clipboard-set が見つかりません（Termux:API を確認してください）" >&2
     return 1
@@ -56,7 +68,7 @@ atcoder_copy() {
   local tmp_file
   tmp_file="$(mktemp)"
 
-  if ! ssh "${atcoder_ssh_common_opts[@]}" "$atcoder_host" "wsl bash -lc 'set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt'" > "$tmp_file"; then
+  if ! _atcoder_wsl "set -euo pipefail; test -s ${atcoder_env_dir}/bundled.txt; cat ${atcoder_env_dir}/bundled.txt" > "$tmp_file"; then
     rm -f "$tmp_file"
     echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行し、生成に成功しているか確認してください）" >&2
     return 1
@@ -95,17 +107,17 @@ atcoder_copy() {
   return 0
 }
 
-atcoder_watch_copy() {
+atcoder_watch_copy_impl() {
   local interval="${1:-1}"
   local last_sig=""
 
   while :; do
     local sig
-    sig="$(ssh "${atcoder_ssh_common_opts[@]}" "$atcoder_host" "wsl bash -lc 'if [ -s ${atcoder_env_dir}/bundled.txt ]; then sha256sum ${atcoder_env_dir}/bundled.txt | awk \"{print \\\$1}\"; fi'" 2>/dev/null || true)"
+    sig="$(_atcoder_wsl "if [ -s ${atcoder_env_dir}/bundled.txt ]; then sha256sum ${atcoder_env_dir}/bundled.txt | cut -d ' ' -f1; fi" 2>/dev/null || true)"
 
     if [ -n "$sig" ] && [ "$sig" != "$last_sig" ]; then
       last_sig="$sig"
-      if atcoder_copy >/dev/null 2>&1; then
+      if atcoder_copy_impl >/dev/null 2>&1; then
         echo "[auto-copy] Android clipboard updated" >&2
       else
         echo "[auto-copy] copy failed (run atcoder-copy manually for details)" >&2
@@ -119,11 +131,11 @@ atcoder_watch_copy() {
 atcoder() {
   local watcher_pid=""
   if command -v termux-clipboard-set >/dev/null 2>&1; then
-    atcoder_watch_copy 1 &
+    atcoder_watch_copy_impl 1 &
     watcher_pid=$!
   fi
 
-  ssh "${atcoder_ssh_common_opts[@]}" -t "$atcoder_host" "wsl bash -lc 'cd ${atcoder_env_dir} && ./setup.sh attach'"
+  _atcoder_ssh -t "$atcoder_host" "wsl bash -lc $(printf '%q' "cd ${atcoder_env_dir} && ./setup.sh attach")"
   local exit_code=$?
 
   if [ -n "$watcher_pid" ]; then
@@ -135,8 +147,8 @@ atcoder() {
 }
 
 # bash 関数名はハイフンを使えないため、ユーザー向けには alias で公開する。
-alias atcoder-copy='atcoder_copy'
-alias atcoder-watch-copy='atcoder_watch_copy'
+alias atcoder-copy='atcoder_copy_impl'
+alias atcoder-watch-copy='atcoder_watch_copy_impl'
 # <<< atcoder <<<
 EOF
 
