@@ -45,7 +45,36 @@ cat >> "$TARGET_FILE" <<'EOF'
 alias atcoder='ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -t __ATCODER_HOST__ "wsl bash -lc '\''cd __ATCODER_ENV_DIR__ && ./setup.sh attach'\''"'
 
 # Android 端末側で bundled.txt を確実にクリップボードへ取り込む。
-alias atcoder-copy='ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''cat __ATCODER_ENV_DIR__/bundled.txt'\''" | termux-clipboard-set'
+atcoder-copy() {
+  if ! command -v termux-clipboard-set >/dev/null 2>&1; then
+    echo "エラー: termux-clipboard-set が見つかりません（Termux:API を確認してください）" >&2
+    return 1
+  fi
+
+  local bundled_text
+  if ! bundled_text="$(ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 __ATCODER_HOST__ "wsl bash -lc '\''cat __ATCODER_ENV_DIR__/bundled.txt'\''" 2>/dev/null)"; then
+    echo "エラー: bundled.txt の取得に失敗しました（先に ,b を実行してください）" >&2
+    return 1
+  fi
+
+  if [ -z "$bundled_text" ]; then
+    echo "エラー: bundled.txt が空です（先に ,b を実行してください）" >&2
+    return 1
+  fi
+
+  if printf '%s' "$bundled_text" | termux-clipboard-set; then
+    echo "Android クリップボードへコピーしました。"
+    return 0
+  fi
+
+  if termux-clipboard-set "$bundled_text"; then
+    echo "Android クリップボードへコピーしました。"
+    return 0
+  fi
+
+  echo "エラー: termux-clipboard-set へのコピーに失敗しました" >&2
+  return 1
+}
 # <<< atcoder <<<
 EOF
 
