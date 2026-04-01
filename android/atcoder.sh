@@ -42,7 +42,9 @@ cat >> "$TARGET_FILE" <<'EOF'
 # >>> atcoder >>>
 # Termux から PC の atcoder 開発環境へ一発接続する。
 # 2ペイン化の判断は PC 側 setup.sh attach が担当する。
-alias atcoder='ssh -i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -t __ATCODER_HOST__ "wsl bash -lc '\''cd __ATCODER_ENV_DIR__ && ./setup.sh attach'\''"'
+atcoder_host="__ATCODER_HOST__"
+atcoder_env_dir="__ATCODER_ENV_DIR__"
+atcoder_ssh_common_opts=(-i "$HOME/.ssh/id_ed25519" -o ServerAliveInterval=15 -o ServerAliveCountMax=3)
 
 # Android 端末側で bundled.txt を確実にクリップボードへ取り込む。
 atcoder-copy() {
@@ -92,6 +94,45 @@ atcoder-copy() {
   echo "Android クリップボードへコピーしました（${copied_bytes} bytes）。"
   return 0
 }
+
+atcoder-watch-copy() {
+  local interval="${1:-1}"
+  local last_sig=""
+
+  while :; do
+    local sig
+    sig="$(ssh "${atcoder_ssh_common_opts[@]}" "$atcoder_host" "wsl bash -lc 'if [ -s ${atcoder_env_dir}/bundled.txt ]; then sha256sum ${atcoder_env_dir}/bundled.txt | awk \"{print \\\$1}\"; fi'" 2>/dev/null || true)"
+
+    if [ -n "$sig" ] && [ "$sig" != "$last_sig" ]; then
+      last_sig="$sig"
+      if atcoder-copy >/dev/null 2>&1; then
+        echo "[auto-copy] Android clipboard updated" >&2
+      else
+        echo "[auto-copy] copy failed (run atcoder-copy manually for details)" >&2
+      fi
+    fi
+
+    sleep "$interval"
+  done
+}
+
+atcoder() {
+  local watcher_pid=""
+  if command -v termux-clipboard-set >/dev/null 2>&1; then
+    atcoder-watch-copy 1 &
+    watcher_pid=$!
+  fi
+
+  ssh "${atcoder_ssh_common_opts[@]}" -t "$atcoder_host" "wsl bash -lc 'cd ${atcoder_env_dir} && ./setup.sh attach'"
+  local exit_code=$?
+
+  if [ -n "$watcher_pid" ]; then
+    kill "$watcher_pid" >/dev/null 2>&1 || true
+    wait "$watcher_pid" 2>/dev/null || true
+  fi
+
+  return "$exit_code"
+}
 # <<< atcoder <<<
 EOF
 
@@ -101,3 +142,4 @@ sed -i "s|__ATCODER_HOST__|${HOST_VALUE}|g; s|__ATCODER_ENV_DIR__|${ENV_DIR_VALU
 echo "atcoder エイリアスを ${TARGET_FILE} に設定しました。"
 echo "source ${TARGET_FILE} 後に atcoder で接続できます。"
 echo "bundle 後に Android へ確実コピーするには atcoder-copy を使えます。"
+echo "接続中は bundled.txt 更新時に atcoder-copy が自動実行されます。"
