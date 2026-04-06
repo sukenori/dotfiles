@@ -23,7 +23,7 @@ RUN mkdir -p /root/.local/bin \
 ENV PATH="/root/.local/bin:${PATH}"
 
 # Rust をインストール
-RUN apt-get update && apt-get install -y build-essential pkg-config libssl-dev
+RUN apt-get update && apt-get install -y build-essential pkg-config libssl-dev zlib1g-dev
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | bash -s -- -y \
  && echo 'source "$HOME/.cargo/env"' >> /root/.bashrc
 ENV PATH="/root/.cargo/bin:/root/.local/bin:${PATH}"
