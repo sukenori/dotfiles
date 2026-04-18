@@ -67,3 +67,6 @@ fi
 
 # ブラウザは Windows 側で既定に設定されたブラウザを使用
 export BROWSER='/mnt/c/Windows/explorer.exe'
+
+# .zshrc.localがあれば読む
+[ -f "${HOME}/.zshrc.local" ] && source "${HOME}/.zshrc.local"
