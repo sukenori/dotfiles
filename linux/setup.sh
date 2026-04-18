@@ -22,9 +22,6 @@ sudo docker build -t base-image -f "$HOME/dotfiles/Dockerfile" "$HOME/dotfiles"
 # Docker を普段 sudo なしで使えるよう、実行ユーザーを docker グループへ追加（反映は次回ログイン以降）
 TARGET_USER="${SUDO_USER:-$USER}"
 sudo usermod -aG docker "$TARGET_USER"
-echo "$TARGET_USER を docker グループに追加しました。"
-echo "スクリプト中の docker は sudo で実行するため、このままでも setup は継続できます。"
-echo "手動で sudo なし docker を使う場合は、再ログインか 'newgrp docker' を実行してください。"
 
 # dotfiles リポジトリの取得・更新
 git -C "$HOME/dotfiles" pull --ff-only
