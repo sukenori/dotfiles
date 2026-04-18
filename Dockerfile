@@ -48,8 +48,7 @@ RUN apt-get update && apt-get install -y ripgrep
 # Node.js のインストール
 RUN NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+') \
  && curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
- && apt-get install -y nodejs \
- && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y nodejs
 
 # デフォルトシェルをZshに設定
 CMD ["/bin/zsh"]
