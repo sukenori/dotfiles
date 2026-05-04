@@ -2,4 +2,4 @@
 	name = sukenori
 	email = sukenori@coo.net
 [credential]
-	helper = "!f() { /root/.vscode-server/bin/e7fb5e96c0730b9deb70b33781f98e2f35975036/node /tmp/vscode-remote-containers-d8339e35-34cd-4682-9c85-a697e6b9a5f6.js git-credential-helper $*; }; f"
+	helper = "!f() { /root/.vscode-server/bin/560a9dba96f961efea7b1612916f89e5d5d4d679/node /tmp/vscode-remote-containers-780d3dc4-9ad3-43db-81e4-5144ca66d424.js git-credential-helper $*; }; f"

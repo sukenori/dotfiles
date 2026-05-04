@@ -2,11 +2,11 @@
 
 shell = "zsh"
 
-# zsh-autosuggestions — 過去の履歴から候補をグレー文字で表示し、→キーで補完できる
+# zsh-autosuggestions — 過去の履歴から候補をグレー文字で表示し、→ キーで補完できる
 [plugins.zsh-autosuggestions]
 github = "zsh-users/zsh-autosuggestions"
 
 # zsh-syntax-highlighting — コマンド入力中に色がつく（正しいコマンドは緑、間違いは赤）
-# 注意: syntax-highlighting はできるだけ最後に読み込む
+# syntax-highlighting はできるだけ最後に読み込む
 [plugins.zsh-syntax-highlighting]
 github = "zsh-users/zsh-syntax-highlighting"

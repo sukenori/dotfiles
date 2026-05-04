@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Etc/UTC
+ENV TZ=Asia/Tokyo
 SHELL ["/bin/bash", "-c"]
 
 # パッケージ一覧の更新、HTTPS 通信の証明書 curl git をインストール
@@ -49,7 +49,6 @@ RUN apt-get update && apt-get install -y ripgrep
 RUN NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+') \
  && curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
  && apt-get install -y nodejs \
- && rm -rf /var/lib/apt/lists/*
 
 # デフォルトシェルをZshに設定
 CMD ["/bin/zsh"]
