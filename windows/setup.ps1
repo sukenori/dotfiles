@@ -15,9 +15,9 @@ winget install --id Git.Git @WingetArgs
 winget install --id Google.Chrome @WingetArgs
 winget install --id Perplexity.Comet @WingetArgs
 winget install --id Brave.Brave @WingetArgs
+winget install --id Google.ChromeRemoteDesktop @WingetArgs
 winget install --id Obsidian.Obsidian @WingetArgs
 winget install --id Bitwarden.Bitwarden @WingetArgs
-winget install --id Microsoft.PowerToys @WingetArgs
 winget install --id Google.QuickShare @WingetArgs
 winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote
 

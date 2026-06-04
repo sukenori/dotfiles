@@ -163,28 +163,6 @@ return {
           end
         end, { "i", "s" }),
 
-        -- Tab で次の候補／スニペットの次の入力欄へ移動 Tabキーの操作です。メニューが出ていれば次の候補へ、スニペットの入力箇所があれば次へジャンプし、どちらも該当しなければ本来のTab入力をします。
-        ["<Tab>"] = cmp.mapping(function(fallback)
-          if cmp.visible() then
-            cmp.select_next_item({ behavior = cmp.SelectBehavior.Select })
-          elseif luasnip.expand_or_jumpable() then
-            luasnip.expand_or_jump()
-          else
-            fallback()
-          end
-        end, { "i", "s" }),
-
-        -- Shift+Tab で前の候補へ移動 ShiftとTabキーの操作です。Tabとは逆方向に、前の候補や前のスニペット入力箇所へ戻ります。
-        ["<S-Tab>"] = cmp.mapping(function(fallback)
-          if cmp.visible() then
-            cmp.select_prev_item({ behavior = cmp.SelectBehavior.Select })
-          elseif luasnip.jumpable(-1) then
-            luasnip.jump(-1)
-          else
-            fallback()
-          end
-        end, { "i", "s" }),
-
         -- Enter は「候補を明示選択している時だけ確定」し、未選択なら通常改行へフォールバック Enterキーの操作です。メニューが表示されており、かつ矢印キーなどで明示的に候補を選んでいる時だけその候補を確定します。選んでいない場合は通常の改行を行います。
         ["<CR>"] = cmp.mapping(function(fallback)
           if cmp.visible() then

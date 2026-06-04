@@ -49,10 +49,14 @@ if command -v zoxide >/dev/null 2>&1; then
 fi
 
 # zsh 補助プラグイン（sheldon）を読み込む
-export ZSH_AUTOSUGGEST_USE_ASYNC=1
+export ZSH_AUTOSUGGEST_USE_ASYNC=0
 if command -v sheldon >/dev/null 2>&1; then
   eval "$(sheldon source)"
 fi
+
+# zsh-autosuggestions が上書きする Ctrl+N/P を解除
+bindkey "^P" up-line-or-history
+bindkey "^N" down-line-or-history
 
 # tmux 下ペインで NVIM_SOCKET_PATH が渡された場合は nvr 経由で上ペインの nvim を使う。
 if [ -n "${NVIM_SOCKET_PATH:-}" ]; then
