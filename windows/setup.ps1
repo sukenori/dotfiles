@@ -8,18 +8,19 @@ $WingetArgs = @(
     "--accept-package-agreements"
 )
 # 必要アプリを入れる
+winget source update 
 winget install --id 9WZDNCRFJ4MV @WingetArgs #Lenobo Vantage
 winget install --id 9MVLWT5DMSKR @WingetArgs #Lenovo Pen Settings
 winget install --id Tailscale.Tailscale @WingetArgs
 winget install --id Git.Git @WingetArgs
 winget install --id Google.Chrome @WingetArgs
-winget install --id Perplexity.Comet @WingetArgs
+# winget install --id Perplexity.Comet @WingetArgs Comet は winget 経由だとインストーラーが落ちるので、https://perplexity.sng.link/Bot2p/kkat?_smtype=3 でインストールする
 winget install --id Brave.Brave @WingetArgs
 winget install --id Google.ChromeRemoteDesktop @WingetArgs
 winget install --id Obsidian.Obsidian @WingetArgs
 winget install --id Bitwarden.Bitwarden @WingetArgs
 winget install --id Google.QuickShare @WingetArgs
-winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote
+# winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote はフランス語版がインストールされてしまうので、https://go.microsoft.com/fwlink/?linkid=2110341 を用いてインストールする
 
 # AdGuard Home を導入
 $AdGuardDir = "$env:ProgramFiles\AdGuardHome"
@@ -78,16 +79,10 @@ if (-not (Test-Path $TerminalDir)) {
     New-Item -ItemType Directory -Force -Path $TerminalDir
 }
 # GitHub から最新設定を取得して上書きする
-$Downloaded = $false
 try {
     Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
-    $Downloaded = $true
-    break
 }
 catch {
-    continue
-}
-if (-not $Downloaded) {
     Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
 }
 
