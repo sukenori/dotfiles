@@ -7,19 +7,6 @@ set -euo pipefail
 # .gitconfig を配置（credential.helper = store が含まれている）
 ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
 
-# GitHub への HTTPS 認証（初回のみ）
-# push 時に Username/Password を聞かれたら：
-#   Username: sukenori
-#   Password: GitHubで発行したPAT（https://github.com/settings/tokens）
-# 以降は ~/.git-credentials に記憶されるため入力不要
-echo "GitHubのPATを発行しておいてください："
-echo "https://github.com/settings/tokens"
-echo "（scopes: repo にチェックを入れる）"
-echo ""
-
-# dotfiles の remote を HTTPS に切り替え
-git -C "$HOME/dotfiles" remote set-url origin https://github.com/sukenori/dotfiles.git
-
 # Docker Engine のインストール
 sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings

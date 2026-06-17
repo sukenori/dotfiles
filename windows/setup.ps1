@@ -115,6 +115,17 @@ catch {
     Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
 }
 
+# WSL内で git の credential.helper を store に設定
+wsl -- git config --global credential.helper store
+
+# WSL内で dotfiles を HTTPS でクローン
+wsl -- git clone https://github.com/sukenori/dotfiles.git ~/dotfiles
+
+# 案内メッセージ（初回push時にPATを入力するよう促す）
+Write-Host "GitHubへの初回push時にPATの入力が必要です："
+Write-Host "https://github.com/settings/tokens"
+Write-Host "（scopes: repo にチェック）"
+
 # WSL で Ubuntu をセットアップ
 $UbuntuExists = (wsl -l -q 2>$null) -contains "Ubuntu"
 if (-not $UbuntuExists) {
