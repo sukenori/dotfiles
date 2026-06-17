@@ -18,6 +18,11 @@
         "name": "Ubuntu",
         "source": "Windows.Terminal.Wsl",
         "startingDirectory": "//wsl$/Ubuntu/home/sukenori"
+      },
+      {
+        "name": "Windows PowerShell",
+        "commandline": "powershell.exe",
+        "hidden": false
       }
     ]
   }

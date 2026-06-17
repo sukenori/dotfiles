@@ -4,20 +4,21 @@
 # パイプ途中も含めて失敗、未定義変数を検出
 set -euo pipefail
 
-# SSH 鍵の生成（なければ）
-if [ ! -f "$HOME/.ssh/id_ed25519" ]; then
-  ssh-keygen -t ed25519 -C "sukenori@coo.net" -N "" -f "$HOME/.ssh/id_ed25519"
-fi
-# 公開鍵を表示して登録を促す
-echo "GitHubにSSH鍵を登録してください："
-cat "$HOME/.ssh/id_ed25519.pub"
-echo "https://github.com/settings/ssh/new"
-echo "登録後、Enterを押してください"
-read -r
-# 疎通確認
-ssh -T git@github.com || true
-# dotfiles の remote を SSH に切り替え
-git -C "$HOME/dotfiles" remote set-url origin git@github.com:sukenori/dotfiles.git
+# .gitconfig を配置（credential.helper = store が含まれている）
+ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
+
+# GitHub への HTTPS 認証（初回のみ）
+# push 時に Username/Password を聞かれたら：
+#   Username: sukenori
+#   Password: GitHubで発行したPAT（https://github.com/settings/tokens）
+# 以降は ~/.git-credentials に記憶されるため入力不要
+echo "GitHubのPATを発行しておいてください："
+echo "https://github.com/settings/tokens"
+echo "（scopes: repo にチェックを入れる）"
+echo ""
+
+# dotfiles の remote を HTTPS に切り替え
+git -C "$HOME/dotfiles" remote set-url origin https://github.com/sukenori/dotfiles.git
 
 # Docker Engine のインストール
 sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg

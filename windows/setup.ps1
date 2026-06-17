@@ -71,20 +71,10 @@ if (-not (Test-Path $targetKey)) { New-Item -ItemType File -Path $targetKey -For
 icacls.exe $targetKey /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
 Restart-Service sshd
 
-# Windows Terminal の設定ファイルを配置する
-$TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
-$TerminalSettingsPath = "$TerminalDir\settings.json"
-$GitHubSettingsUrls = "https://raw.githubusercontent.com/sukenori/dotfiles/main/windows/settings.json"
-if (-not (Test-Path $TerminalDir)) {
-    New-Item -ItemType Directory -Force -Path $TerminalDir
-}
-# GitHub から最新設定を取得して上書きする
-try {
-    Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
-}
-catch {
-    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
-}
+# .gitconfig を配置する
+$GitConfigSrc = "https://raw.githubusercontent.com/sukenori/dotfiles/main/git/.gitconfig"
+$GitConfigDest = "$env:USERPROFILE\.gitconfig"
+Invoke-WebRequest -Uri $GitConfigSrc -OutFile $GitConfigDest
 
 # HackGen Console NF フォントを入れる
 $TempDir = "$env:TEMP\HackGenFont"
@@ -109,6 +99,21 @@ foreach ($Font in $FontFiles) {
 }
 # 一時フォルダを削除する
 Remove-Item -Path $TempDir -Recurse -Force
+
+# Windows Terminal の設定ファイルを配置する
+$TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
+$TerminalSettingsPath = "$TerminalDir\settings.json"
+$GitHubSettingsUrls = "https://raw.githubusercontent.com/sukenori/dotfiles/main/windows/settings.json"
+if (-not (Test-Path $TerminalDir)) {
+    New-Item -ItemType Directory -Force -Path $TerminalDir
+}
+# GitHub から最新設定を取得して上書きする
+try {
+    Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
+}
+catch {
+    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
+}
 
 # WSL で Ubuntu をセットアップ
 $UbuntuExists = (wsl -l -q 2>$null) -contains "Ubuntu"
