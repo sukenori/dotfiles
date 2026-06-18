@@ -107,12 +107,17 @@ $GitHubSettingsUrls = "https://raw.githubusercontent.com/sukenori/dotfiles/main/
 if (-not (Test-Path $TerminalDir)) {
     New-Item -ItemType Directory -Force -Path $TerminalDir
 }
-# GitHub から最新設定を取得して上書きする
-try {
-    Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
-}
-catch {
-    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
+
+# settings.json → -UseBasicParsing を追加（プロキシ・TLS問題を回避）
+Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -UseBasicParsing -ErrorAction Stop
+
+# git clone → 既存チェックを追加
+$dotfilesPath = wsl -- echo '$HOME/dotfiles'
+$exists = wsl -- test -d '$HOME/dotfiles' "&&" echo "yes"
+if ($exists -ne "yes") {
+    wsl -- git clone https://github.com/sukenori/dotfiles.git '~/dotfiles'
+} else {
+    Write-Host "dotfiles は既に存在するためスキップします。"
 }
 
 # WSL内で git の credential.helper を store に設定
