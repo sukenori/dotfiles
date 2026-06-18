@@ -8,17 +8,19 @@ $WingetArgs = @(
     "--accept-package-agreements"
 )
 # 必要アプリを入れる
+winget source update 
 winget install --id 9WZDNCRFJ4MV @WingetArgs #Lenobo Vantage
 winget install --id 9MVLWT5DMSKR @WingetArgs #Lenovo Pen Settings
 winget install --id Tailscale.Tailscale @WingetArgs
 winget install --id Git.Git @WingetArgs
 winget install --id Google.Chrome @WingetArgs
-winget install --id Perplexity.Comet @WingetArgs
+# winget install --id Perplexity.Comet @WingetArgs Comet は winget 経由だとインストーラーが落ちるので、https://perplexity.sng.link/Bot2p/kkat?_smtype=3 でインストールする
 winget install --id Brave.Brave @WingetArgs
+winget install --id Google.ChromeRemoteDesktop @WingetArgs
+winget install --id Obsidian.Obsidian @WingetArgs
 winget install --id Bitwarden.Bitwarden @WingetArgs
-winget install --id Microsoft.PowerToys @WingetArgs
 winget install --id Google.QuickShare @WingetArgs
-winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote
+# winget install --id XPFFZHVGQWWLHB @WingetArgs #OneNote はフランス語版がインストールされてしまうので、https://go.microsoft.com/fwlink/?linkid=2110341 を用いてインストールする
 
 # AdGuard Home を導入
 $AdGuardDir = "$env:ProgramFiles\AdGuardHome"
@@ -69,26 +71,10 @@ if (-not (Test-Path $targetKey)) { New-Item -ItemType File -Path $targetKey -For
 icacls.exe $targetKey /inheritance:r /grant "Administrators:F" /grant "SYSTEM:F"
 Restart-Service sshd
 
-# Windows Terminal の設定ファイルを配置する
-$TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
-$TerminalSettingsPath = "$TerminalDir\settings.json"
-$GitHubSettingsUrls = "https://raw.githubusercontent.com/sukenori/dotfiles/main/windows/settings.json"
-if (-not (Test-Path $TerminalDir)) {
-    New-Item -ItemType Directory -Force -Path $TerminalDir
-}
-# GitHub から最新設定を取得して上書きする
-$Downloaded = $false
-try {
-    Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
-    $Downloaded = $true
-    break
-}
-catch {
-    continue
-}
-if (-not $Downloaded) {
-    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
-}
+# .gitconfig を配置する
+$GitConfigSrc = "https://raw.githubusercontent.com/sukenori/dotfiles/main/git/.gitconfig"
+$GitConfigDest = "$env:USERPROFILE\.gitconfig"
+Invoke-WebRequest -Uri $GitConfigSrc -OutFile $GitConfigDest
 
 # HackGen Console NF フォントを入れる
 $TempDir = "$env:TEMP\HackGenFont"
@@ -113,6 +99,32 @@ foreach ($Font in $FontFiles) {
 }
 # 一時フォルダを削除する
 Remove-Item -Path $TempDir -Recurse -Force
+
+# Windows Terminal の設定ファイルを配置する
+$TerminalDir = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
+$TerminalSettingsPath = "$TerminalDir\settings.json"
+$GitHubSettingsUrls = "https://raw.githubusercontent.com/sukenori/dotfiles/main/windows/settings.json"
+if (-not (Test-Path $TerminalDir)) {
+    New-Item -ItemType Directory -Force -Path $TerminalDir
+}
+# GitHub から最新設定を取得して上書きする
+try {
+    Invoke-WebRequest -Uri $GitHubSettingsUrls -OutFile $TerminalSettingsPath -ErrorAction Stop
+}
+catch {
+    Write-Warning "Windows Terminal settings.json の取得に失敗しました。URLを確認してください。"
+}
+
+# WSL内で git の credential.helper を store に設定
+wsl -- git config --global credential.helper store
+
+# WSL内で dotfiles を HTTPS でクローン
+wsl -- git clone https://github.com/sukenori/dotfiles.git ~/dotfiles
+
+# 案内メッセージ（初回push時にPATを入力するよう促す）
+Write-Host "GitHubへの初回push時にPATの入力が必要です："
+Write-Host "https://github.com/settings/tokens"
+Write-Host "（scopes: repo にチェック）"
 
 # WSL で Ubuntu をセットアップ
 $UbuntuExists = (wsl -l -q 2>$null) -contains "Ubuntu"
