@@ -30,12 +30,12 @@ return {
       -- 念のため、空白を取り除く
       input = vim.trim(input)
 
-      -- プロジェクトローカルにある検索スコープを指定する .nvim/ripgrep_scope_dirs.txt を探す
-      local scope_file = vim.fs.find(".nvim/ripgrep_scope_dirs.txt", {
+      -- プロジェクトローカルにある検索スコープを指定する .nvim/scope_dirs.txt を探す
+      local scope_file = vim.fs.find(".nvim/scope_dirs.txt", {
       path = vim.fn.getcwd(),
       upward = true,
       })[1]
-      -- .nvim/ripgrep_scope_dirs.txt 内のディレクトリリストを作る
+      -- .nvim/scope_dirs.txt 内のディレクトリリストを作る
       local dirs = {}
       if scope_file then
         for _, line in ipairs(vim.fn.readfile(scope_file)) do

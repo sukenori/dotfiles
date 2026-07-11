@@ -1,7 +1,9 @@
 [user]
 	name = sukenori
 	email = sukenori@coo.net
+# PATを .git-credentials に保存
 [credential]
 	helper = store
+# チェックアウト時は改行変換しない、コミット時に CRLF → LF に変換する
 [core]
 	autocrlf = input
