@@ -14,6 +14,19 @@ return {
       and vim.g.user_line_rg_file_glob
       or nil          -- ripgrep の検索対象指定用グローバル変数があれば取得し、なければ nil を代入
 
+    -- カーソルより前に「空白以外の文字」があるかどうかを判定する関数
+    -- これを cmp の enabled 判定に使い、入力が空のときは補完自体を無効化する
+    local function has_words_before()
+      -- 現在カーソルがある行の文字列をそのまま取得
+      local line = vim.api.nvim_get_current_line()
+      -- カーソルの列番号（0始まり）を取得。行番号は使わないので [2] だけを取り出す
+      local col = vim.api.nvim_win_get_cursor(0)[2]
+      -- 行頭からカーソル位置までを切り出す（Luaのsubは1始まりだが、0始まりのcolをそのまま終端に使ってよい）
+      local before_cursor = line:sub(1, col)
+      -- 前後の空白を除いても文字列が残るなら true（＝何か入力されている）
+      return vim.trim(before_cursor) ~= ""
+    end
+
     -- ripgrep を使って行単位の補完を行うためのカスタムソース用オブジェクトと、それを生成する new 関数を定義
     local cp_source = {}
     function cp_source:new()
@@ -29,6 +42,13 @@ return {
       local input = request.context.cursor_before_line:sub(request.offset)
       -- 念のため、空白を取り除く
       input = vim.trim(input)
+
+      -- 入力が空文字列なら、ripgrep を起動せず即座に候補なしで終了する
+      -- （空文字を rg にそのまま渡すと全行に一致してしまい、古い検索の残骸のような挙動につながるため）
+      if input == "" then
+        callback({ items = {}, isIncomplete = false })
+        return
+      end
 
       -- プロジェクトローカルにある検索スコープを指定する .nvim/scope_dirs.txt を探す
       local scope_file = vim.fs.find(".nvim/scope_dirs.txt", {
@@ -59,7 +79,7 @@ return {
         "--no-filename", -- 先頭に付く「ファイル名:」という出力もオフに（「見つけた行のテキストだけ」を取得）
         "--smart-case",  -- キーワードがすべて小文字なら大文字・小文字を区別しない、大文字が1文字でも含まれていたら厳密に区別して探す
         "--color=never", -- 見つかった文字を赤くハイライトするなどの色付けを禁止（エスケープシーケンスが挿入されてテキストデータとして扱いにくくなるため）
-        input,           -- 検索する文字列
+        input,           -- 検索する文字列（常に「今の入力」を使う。固定文字列にしてはいけない）
       }
       -- グローバル変数でファイルパターンの指定があればコマンドに追加
       if line_rg_file_glob then
@@ -124,6 +144,15 @@ return {
 
     -- nvim-cmp 全体のセットアップ
     cmp.setup({
+      -- cmp が「今この瞬間に補完を行うべきか」を毎回判定する公式フック
+      -- カーソルの直前に文字が何もない（＝全部消した直後や改行直後）なら false を返し、
+      -- cmp 自体を無効化して、開いていた補完メニューも閉じさせる
+      -- これにより、以前あった「削除後も古い候補（headerなど）が残り続ける」現象を、
+      -- 自作の abort() 呼び出しではなく cmp 本体の管理下で解消する
+      enabled = function()
+        return has_words_before()
+      end,
+
       -- 候補表示時に先頭を自動選択しない
       preselect = cmp.PreselectMode.None,
       completion = {

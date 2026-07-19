@@ -39,14 +39,8 @@ vim.g.clipboard = {
 }
 vim.opt.clipboard = "unnamedplus"
 
--- nvim を起動したカレントディレクトリに .nvim.lua があれば読む
-vim.api.nvim_create_autocmd(
-  "VimEnter", {
-    callback = function()
-      local local_cfg = vim.fn.getcwd() .. "/.nvim.lua"
-      if vim.fn.filereadable(local_cfg) == 1 then
-        dofile(local_cfg)
-      end
-    end,
-  }
-)
+-- lazy.nvim の設定が終わった直後（バッファが開かれる前）に、nvim を起動したカレントディレクトリに .nvim.lua があれば読む
+local local_cfg = vim.fn.getcwd() .. "/.nvim.lua"
+if vim.fn.filereadable(local_cfg) == 1 then
+  dofile(local_cfg)
+end

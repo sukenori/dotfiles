@@ -13,6 +13,16 @@ return {
     local builtin = require("telescope.builtin")
 
     telescope.setup({
+      defaults = {
+        -- プロジェクトローカルで vim.g.user_telescope_file_glob が設定されていれば live_grep の検索対象ファイルを絞る
+        additional_args = function()
+          local glob = vim.g.user_telescope_file_glob
+          if glob and glob ~= "" then
+            return { "--glob", glob }
+          end
+          return {}
+        end,
+      },
       extensions = {
         fzf = {
           fuzzy = true,                   -- あいまい検索を有効にする

@@ -1,6 +1,9 @@
 {
   "defaultProfile": "Ubuntu",
-  "launchMode": "maximized",
+  "launchMode": "default",
+  "initialPosition": "40,40",
+  "initialCols": 163,
+  "initialRows": 45,
   "profiles": {
     "defaults": {
       "font": {
@@ -8,7 +11,7 @@
         "size": 12
       },
       "colorScheme": "One Half Dark",
-      "opacity": 70,
+      "opacity": 65,
       "useAcrylic": false,
       "cursorShape": "filledBox",
       "bellStyle": "none"

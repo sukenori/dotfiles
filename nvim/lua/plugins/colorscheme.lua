@@ -11,16 +11,21 @@ return {
     opts = {
       -- tokyonight のスタイルバリアントのうち、最も暗い night
       style = "night",
-      -- 背景を透過しない
-      transparent = false,
+      -- 背景を透過する
+      transparent = true,
       -- カラー変数を上書き（コントラストを高めるため、tokyonight の内部カラー変数をデフォルトより少し暗く、明るくする）
       on_colors = function(colors)
         -- bg は通常の背景色
-        colors.bg = "#0b0f14"
+        -- colors.bg = "#0b0f14"
         -- bg_dark はサイドバーや非アクティブウィンドウの背景色
-        colors.bg_dark = "#0b0f14"
+        -- colors.bg_dark = "#0b0f14"
         -- fg は基本テキスト色
         colors.fg = "#e6edf3"
+      end,
+      -- 右クリックメニューや、cmp の補完メニューなども透過させる
+      on_highlights = function(hl, _)
+        hl.NormalFloat = { bg = "NONE" }
+        hl.Pmenu = { bg = "NONE" }
       end,
     },
     -- lazy.nvim config 関数（第1引数はプラグインの名前やパスといったメタ情報テーブル、第2引数は opts テーブル）
