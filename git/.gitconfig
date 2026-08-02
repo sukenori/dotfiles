@@ -3,7 +3,11 @@
 	email = sukenori@coo.net
 # PATを .git-credentials に保存
 [credential]
-	helper = store
+	helper = "!f() { /root/.vscode-server/bin/e4c7e7b1d6d060162f4aa7f8225271b67ce1df75/node /tmp/vscode-remote-containers-9075896e-bb07-4bae-a96b-4d39bbcdaa0c.js git-credential-helper $*; }; f"
 # チェックアウト時は改行変換しない、コミット時に CRLF → LF に変換する
 [core]
 	autocrlf = input
+[safe]
+	directory = /home/sukenori/atcoder-nim-env
+	directory = /home/sukenori/cp-nim-lib
+	directory = /home/sukenori/cp-solved-log

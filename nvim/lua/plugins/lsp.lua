@@ -17,7 +17,7 @@ return {
       vim.lsp.config("*", {
         capabilities = capabilities,
       })
-    end    
+    end
 
     -- NeoVim の診断（エラー・警告）表示の設定
     vim.diagnostic.config({
