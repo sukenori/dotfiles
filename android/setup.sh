@@ -22,11 +22,11 @@ chmod 700 "$HOME/.ssh"
 
 # 3. 接続情報の入力
 echo "PCへの接続設定を行います。"
-printf "PC側のユーザー名を入力してください (例: itosu): "
+printf "PC 側のユーザー名を入力してください: "
 read -r WIN_USER </dev/tty
-printf "PC側のTailscale IPを入力してください (100.x.x.x): "
+printf "PC 側の Tailscale IP を入力してください: "
 read -r TS_IP </dev/tty
-printf "アタッチするDockerコンテナ名を入力してください: "
+printf "接続する Docker コンテナ名を入力してください: "
 read -r CONTAINER </dev/tty
 
 # 4. SSH config の生成
