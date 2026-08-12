@@ -65,7 +65,7 @@ return {
         vim.keymap.set("n", "gi", vim.lsp.buf.implementation, opts)
         -- 変数名などをプロジェクト全体で安全に変更する
         vim.keymap.set("n", "<Leader>rn", vim.lsp.buf.rename, opts)
-        -- その場で実行できる自動importの追加やエラーの自動修正などのメニュー（code action）を表示する
+        -- その場で実行できる自動 import の追加やエラーの自動修正などのメニュー（code action）を表示する
         vim.keymap.set("n", "<Leader>ca", vim.lsp.buf.code_action, opts)
         -- 1つ前のエラーや警告に移動する
         vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)

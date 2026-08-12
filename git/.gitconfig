@@ -3,7 +3,7 @@
 	email = sukenori@coo.net
 # PATを .git-credentials に保存
 [credential]
-	helper = "!f() { /root/.vscode-server/bin/e4c7e7b1d6d060162f4aa7f8225271b67ce1df75/node /tmp/vscode-remote-containers-881dde21-380d-41d5-b92a-98e622ca7f1c.js git-credential-helper $*; }; f"
+	helper = "!f() { /root/.vscode-server/bin/c2d1b13fdc4a77628e5f3bb70173351c8f2fbad1/node /tmp/vscode-remote-containers-aa019bf7-71f7-4b58-9af8-bc8039d60f1b.js git-credential-helper $*; }; f"
 # チェックアウト時は改行変換しない、コミット時に CRLF → LF に変換する
 [core]
 	autocrlf = input

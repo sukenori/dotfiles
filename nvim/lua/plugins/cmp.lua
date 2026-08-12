@@ -2,42 +2,40 @@
 
 return {
   "hrsh7th/nvim-cmp", -- プラグインマネージャの lazy.nvim に以下の設定をした nvim-cmp を渡す
-  dependencies = {              -- 依存関係
+  dependencies = {
     "L3MON4D3/LuaSnip",         -- スニペットエンジン
     "saadparwaiz1/cmp_luasnip", -- LuaSnip を補完ソースとして使うためのアダプタ
     "hrsh7th/cmp-nvim-lsp",     -- LSP を補完ソースとして使うためのアダプタ
   },
-  config = function() -- プラグインがダウンロードされた直後に実行される初期設定用の無名関数宣言
+  config = function() -- 初期設定用関数宣言
     local cmp = require("cmp")         -- cmp プラグインの機能（モジュール）を変数に呼び出し
     local luasnip = require("luasnip") -- luasnip プラグインの機能（モジュール）を変数に呼び出し
     local line_rg_file_glob = (type(vim.g.user_line_rg_file_glob) == "string" and vim.g.user_line_rg_file_glob ~= "")
       and vim.g.user_line_rg_file_glob
       or nil          -- ripgrep の検索対象指定用グローバル変数があれば取得し、なければ nil を代入
 
-    -- ripgrep を使って行単位の補完を行うためのカスタムソース用オブジェクトと、それを生成する new 関数を定義
+    -- ripgrep を使って行単位の補完を行うためのソースのオブジェクト
     local cp_source = {}
     function cp_source:new()
       return setmetatable({}, { __index = cp_source })
     end
-    -- 補完のトリガーとして「空白以外の文字からカーソル位置まで」の正規表現を定義（offset を定義）
+    -- 補完のトリガーは「空白以外の文字からカーソル位置まで」の正規表現
     function cp_source:get_keyword_pattern()
       return [[\S.*]]
     end
-    -- 補完処理を定義
+    -- 補完処理
     function cp_source:complete(request, callback)
       -- 行頭からカーソル位置までの全体から、補完の開始位置（offset）から末尾までを切り出し
       local input = request.context.cursor_before_line:sub(request.offset)
       -- 念のため、空白を取り除く
       input = vim.trim(input)
-
-      -- 入力が空文字列なら、ripgrep を起動せず即座に候補なしで終了する
-      -- （空文字を rg にそのまま渡すと全行に一致してしまい、古い検索の残骸のような挙動につながるため）
+      -- 入力が空文字列なら、候補なしで終了する（空文字を渡すと全行に一致してしまう）
       if input == "" then
         callback({ items = {}, isIncomplete = false })
         return
       end
-
-      -- プロジェクトローカルにある検索スコープを指定する .nvim/scope_dirs.txt を探す
+    
+      -- プロジェクトローカルにある検索スコープを指定するための .nvim/scope_dirs.txt を探す
       local scope_file = vim.fs.find(".nvim/scope_dirs.txt", {
       path = vim.fn.getcwd(),
       upward = true,
@@ -52,7 +50,7 @@ return {
           end
         end
       end
-      -- ファイルが存在しない、または有効なパスが 0 個の場合は補完候補なしとして処理を終了
+      -- ファイルが存在しない、または有効なパスが 0 個の場合は処理を終了
       if #dirs == 0 then
         callback({ items = {}, isIncomplete = false })
         return
@@ -66,22 +64,22 @@ return {
         "--no-filename", -- 先頭に付く「ファイル名:」という出力もオフに（「見つけた行のテキストだけ」を取得）
         "--smart-case",  -- キーワードがすべて小文字なら大文字・小文字を区別しない、大文字が1文字でも含まれていたら厳密に区別して探す
         "--color=never", -- 見つかった文字を赤くハイライトするなどの色付けを禁止（エスケープシーケンスが挿入されてテキストデータとして扱いにくくなるため）
-        input,           -- 検索する文字列（常に「今の入力」を使う。固定文字列にしてはいけない）
+        input,           -- 検索する文字列
       }
       -- グローバル変数でファイルパターンの指定があればコマンドに追加
       if line_rg_file_glob then
-        table.insert(cmd, "--glob") -- ファイル名やパスのパターン（グロブパターン）で検索対象にする、ないし除外する
+        table.insert(cmd, "--glob") -- ファイル名やパスのパターン（グロブパターン）で検索対象を絞る
         table.insert(cmd, line_rg_file_glob)
       end
-      -- コマンドの最後に検索対象となるディレクトリをすべて追加して完成
+      -- 最後に検索対象となるディレクトリをすべて追加してコマンド完成
       for _, dir in ipairs(dirs) do
         table.insert(cmd, dir)
       end
 
-      -- ripgrep の実行結果を受け取り、補完候補のリストを作成するための内部関数
+      -- ripgrep の実行結果を受け取って、補完候補のリストを作成する
       local function build_items(stdout, code)
         local items = {}
-        -- コマンドが成功して出力がある場合、重複チェック用のテーブルを用意し、出力を改行ごとに分割して処理
+        -- コマンドが成功して出力がある場合、重複チェック用のテーブルを用意
         if code == 0 and stdout then
           local seen = {}
           for line in string.gmatch(stdout, "[^\r\n]+") do
@@ -102,11 +100,8 @@ return {
         return items
       end
 
-      -- 非同期で ripgrep コマンドを実行し、完了後に build_items 関数で候補リストを作成、Neovimのメイン処理に結果を渡して補完メニューを表示させる
-      -- .system は Neovim 外のコマンドを裏側で実行する関数、第1引数はコマンド、第2引数はバイナリではなくテキストデータを指定、第3引数はコマンド実行後の結果に実行する関数
-      -- その第3引数の関数、obj に対する操作を function で受け、その下に書かれている
+      -- 非同期で ripgrep コマンドを実行（.system）し、完了後に build_items 関数で候補リストを作成、Neovim のメイン処理に結果を渡して補完メニューを表示させる
       vim.system(cmd, { text = true }, function(obj)
-        -- rg（ripgrep）に限らず、.stdout はコマンドの標準出力、.code は終了コード（0 なら見つかった、1 なら見つからなかった、2 ならエラー）
         local items = build_items(obj.stdout, obj.code)
         -- .schedule は Neovim のメインループがアイドルになったときに渡した関数の実行を予約する
         vim.schedule(function()
@@ -124,15 +119,13 @@ return {
     local function build_sources()
       return cmp.config.sources({
         { name = "luasnip" },  -- スニペット
-        { name = "nvim_lsp" }, -- LSP
         { name = "line_rg" },  -- ripgrep ソース
+        { name = "nvim_lsp" }, -- LSP        
       })
     end
 
     -- nvim-cmp 全体のセットアップ
     cmp.setup({
-
-
       -- 候補表示時に先頭を自動選択しない
       preselect = cmp.PreselectMode.None,
       completion = {
@@ -163,7 +156,7 @@ return {
           end
         end, { "i", "s" }), -- 挿入モードと選択モード
 
-        -- previous 逆方向（上）に移動 Ctrlとpの操作です。メニューが出ていれば前の候補へ移動し、出ていなければ本来のキー動作を行います。
+        -- Ctrl+p previous 逆方向（上）に移動
         ["<C-p>"] = cmp.mapping(function(fallback)
           if cmp.visible() then
             cmp.select_prev_item({ behavior = cmp.SelectBehavior.Select })
@@ -172,7 +165,7 @@ return {
           end
         end, { "i", "s" }),
 
-        -- Enter は「候補を明示選択している時だけ確定」し、未選択なら通常改行へフォールバック Enterキーの操作です。メニューが表示されており、かつ矢印キーなどで明示的に候補を選んでいる時だけその候補を確定します。選んでいない場合は通常の改行を行います。
+        -- Enter 「候補を明示選択している時だけ」確定（未選択なら通常改行）
         ["<CR>"] = cmp.mapping(function(fallback)
           if cmp.visible() then
             local entry = cmp.get_selected_entry()
@@ -184,14 +177,14 @@ return {
           fallback()
         end, { "i", "s" }),
 
-        -- forward ドキュメントを下にスクロール Ctrlとfで補完候補に付随するドキュメントを下にスクロールし、Ctrlとbで上にスクロールします。ここでキー操作の設定を終了します。
+        -- Ctrl+f 補完に付随するドキュメントを下（forward）にスクロール
         ["<C-f>"]     = cmp.mapping.scroll_docs(4),
 
-        -- backward ドキュメントを上にスクロール
+        -- Ctrl+b ドキュメントを上（backward）にスクロール
         ["<C-b>"]     = cmp.mapping.scroll_docs(-4),
       }),
 
-      -- 先ほど定義した補完ソースの優先順位を適用してnvim-cmpのセットアップを終了し、設定ファイル全体を閉じます。
+      -- 先ほど定義した補完ソースの優先順位を適用して nvim-cmp のセットアップを終了
       sources = build_sources(),
     })
   end,
