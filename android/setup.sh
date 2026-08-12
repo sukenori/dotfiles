@@ -15,7 +15,7 @@ pkg install -y openssh termux-api make
 DOTFILES_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SSH_CONFIG="$HOME/.ssh/config"
 CONF_FILE="$HOME/.config/atcoder.conf"
-mkdir -p "$HOME/.ssh" "$HOME/.config"
+mkdir -p "$HOME/.ssh" "$HOME/.config" "$HOME/.ssh/sockets"
 chmod 700 "$HOME/.ssh"
 
 # 接続情報の入力
@@ -29,15 +29,16 @@ cat > "$SSH_CONFIG" << EOF
 Host host
     HostName ${TS_IP}
     User ${WIN_USER}
+    ControlMaster auto
+    ControlPersist 10m
+    ControlPath ~/.ssh/sockets/%r@%h-%p
 EOF
 chmod 600 "$SSH_CONFIG"
 
 # Makefile用設定ファイルの生成
 cat > "$CONF_FILE" << EOF
-# Makefile用設定
 HOST=host
 CONTAINER=atcoder-nim
-WORKSPACE=/atcoder-nim-env
 EOF
 
 # Makefileのリンク
@@ -45,7 +46,4 @@ ln -sf "$DOTFILES_DIR/android/Makefile" "$HOME/Makefile"
 
 echo ""
 echo "設定完了"
-echo "Termuxでのコマンド："
-echo "  make attach ... PC のコンテナに接続"
-echo "  make copy   ... bundled.txt をクリップボードにコピー"
-echo "  make watch  ... bundled.txt を監視して自動コピー"
+echo "make attach で PC のコンテナに接続できます"
