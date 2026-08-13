@@ -38,7 +38,7 @@ chmod 600 "$SSH_CONFIG"
 # Makefile用設定ファイルの生成
 cat > "$CONF_FILE" << EOF
 HOST=host
-CONTAINER=atcoder-nim
+ATTACH_SH=/home/sukenori/dotfiles/pc/attach.sh
 EOF
 
 # Makefileのリンク
