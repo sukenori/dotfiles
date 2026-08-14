@@ -29,7 +29,7 @@ return {
         -- （C++ など、実際に treesitter が機能する言語の preview には影響しない）
         preview = {
           treesitter = {
-            disable = { "nim" },
+            disable = { "nim", "markdown" },
           },
         },
       },
