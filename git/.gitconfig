@@ -4,7 +4,7 @@
 
 # PATを .git-credentials に保存
 [credential]
-	helper = "!f() { /root/.vscode-server/bin/c2d1b13fdc4a77628e5f3bb70173351c8f2fbad1/node /tmp/vscode-remote-containers-aa019bf7-71f7-4b58-9af8-bc8039d60f1b.js git-credential-helper $*; }; f"
+	helper = "!f() { /root/.vscode-server/bin/a5b500951314efd502d07465bd138dfbd714a960/node /tmp/vscode-remote-containers-5ac486f0-2a85-441c-822f-a18c676d222d.js git-credential-helper $*; }; f"
 
 # チェックアウト時は改行変換しない、コミット時に CRLF → LF に変換する
 [core]
@@ -13,4 +13,5 @@
 [safe]
 	directory = /home/sukenori/atcoder-nim-env
 	directory = /home/sukenori/cp-nim-lib
+	directory = /home/sukenori/nim-acl
 	directory = /home/sukenori/cp-solved-log

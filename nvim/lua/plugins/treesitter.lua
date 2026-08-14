@@ -53,6 +53,7 @@ return {
         -- Tree-sitter ベースのハイライトを有効化する
         highlight = {
           enable = true,
+          disable = { "nim" },
           -- 従来の正規表現 syntax ハイライトを無効にする（両方オンにすると処理が二重になって遅くなり、競合で色が乱れることもある）
           additional_vim_regex_highlighting = false,
         },

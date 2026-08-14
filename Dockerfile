@@ -42,8 +42,12 @@ RUN curl -Lo /tmp/nvim-linux-x86_64.tar.gz https://github.com/neovim/neovim/rele
 RUN apt-get update && apt-get install -y python3-pip \
  && pip3 install neovim-remote
 
-# ripgrep（ファイル内キーワード検索）をインストール
-RUN apt-get update && apt-get install -y ripgrep
+# ripgrep（ファイル内キーワード検索、PCRE2 先読み対応版）をインストール
+ARG RIPGREP_VERSION=14.1.1
+RUN curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl.tar.gz" -o /tmp/rg.tar.gz \
+ && tar -xzf /tmp/rg.tar.gz -C /tmp \
+ && install -m 0755 "/tmp/ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/rg" /usr/local/bin/rg \
+ && rm -rf /tmp/rg.tar.gz "/tmp/ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl"
 
 # Node.js のインストール
 RUN NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+') \

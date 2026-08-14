@@ -1,4 +1,11 @@
--- telescope.lua — Telescope（ファイル検索・全文検索）の設定
+-- telescope.lua — Telescope（ファイル検索・全文検索）の共通設定
+--
+-- 以前はここに .nvim/scope_dirs.txt を読んで検索対象を絞る
+-- 「優先スコープ」機構を持たせていたが、
+-- 過去解答・自作ライブラリ・Nim-ACLといった横断検索は
+-- すべてプロジェクトローカル側（atcoder-nim.telescope_cp）の
+-- 専用pickerへ移したため、ここは素のfind_files/live_grepに戻す。
+-- dotfilesはどのプロジェクトにも依存しない状態を保つ。
 
 return {
   "nvim-telescope/telescope.nvim",
@@ -14,14 +21,17 @@ return {
 
     telescope.setup({
       defaults = {
-        -- プロジェクトローカルで vim.g.user_telescope_file_glob が設定されていれば live_grep の検索対象ファイルを絞る
-        additional_args = function()
-          local glob = vim.g.user_telescope_file_glob
-          if glob and glob ~= "" then
-            return { "--glob", glob }
-          end
-          return {}
-        end,
+        -- Nim は syntax/nim.vim（レガシー正規表現構文）で色付けする方針で、
+        -- treesitter パーサーを導入していない。
+        -- Telescope preview がそれでも treesitter 経路で色付けしようとし、
+        -- previewers/utils.lua の ft_to_lang / get_lang が nil になって
+        -- 選択のたびにクラッシュするため、nim だけ無効化する。
+        -- （C++ など、実際に treesitter が機能する言語の preview には影響しない）
+        preview = {
+          treesitter = {
+            disable = { "nim" },
+          },
+        },
       },
       extensions = {
         fzf = {
@@ -36,70 +46,9 @@ return {
     -- fzf 拡張を読み込む
     telescope.load_extension("fzf")
 
-    -- 優先検索スコープは project-local の .nvim 下に置いた scope_dirs.txt で定義する
-    local function find_scope_file()
-      local found = vim.fs.find(".nvim/scope_dirs.txt", {
-        path = vim.fs.dirname(vim.api.nvim_buf_get_name(0)),
-        upward = true,
-      })[1] or vim.fs.find(".nvim/scope_dirs.txt", {
-        path = vim.uv.cwd(),
-        upward = true,
-      })[1]
-      return found
-    end
-
-    local function priority_scope_dirs()
-      -- scope_dirs.txt のパスを取得する（見つからなければ空リストを返す）
-      local scope_file = find_scope_file()
-      if not scope_file then
-        return {}
-      end
-
-      local dirs = {}
-      local seen = {} -- 重複ディレクトリを除外するためのセット
-
-      -- scope_dirs.txt を1行ずつ読む
-      for _, line in ipairs(vim.fn.readfile(scope_file)) do
-        local dir = vim.trim(line)                               -- 前後の空白を除去する
-        if dir ~= "" and not dir:match("^#") then                -- 空行とコメント行（# 始まり）を無視する
-          dir = vim.fn.expand(dir)                               -- ~ などの環境変数・略記を展開する
-          if vim.fn.isdirectory(dir) == 1 and not seen[dir] then -- 実在するディレクトリかつ未登録のみ追加
-            seen[dir] = true
-            table.insert(dirs, dir)
-          end
-        end
-      end
-
-      return dirs
-    end
-
-    -- キーマップ
-    vim.keymap.set("n", "<Leader>ff", function() -- ファイル検索（find files）
-      local dirs = priority_scope_dirs()
-      if #dirs > 0 then
-        -- スコープが定義されていれば対象ディレクトリ限定でファイル検索
-        builtin.find_files({
-          search_dirs = dirs,
-          prompt_title = "Priority Scope Files",
-        })
-      else
-        -- スコープ未定義ならカレントディレクトリ以下を対象に通常検索
-        builtin.find_files()
-      end
-    end, { desc = "優先スコープでファイル検索" })
-
-    vim.keymap.set("n", "<Leader>fg", function() -- 全文検索（find grep）
-      local dirs = priority_scope_dirs()
-      if #dirs > 0 then
-        -- スコープが定義されていれば対象ディレクトリ限定で全文検索
-        builtin.live_grep({
-          search_dirs = dirs,
-          prompt_title = "Priority Scope Grep",
-        })
-      else
-        -- スコープ未定義ならカレントディレクトリ以下を対象に通常検索
-        builtin.live_grep()
-      end
-    end, { desc = "優先スコープで全文検索" })
+    -- 汎用のファイル検索・全文検索。
+    -- カレントディレクトリ以下を対象にする、Telescopeの素の挙動のまま。
+    vim.keymap.set("n", "<Leader>ff", builtin.find_files, { desc = "ファイル検索" })
+    vim.keymap.set("n", "<Leader>fg", builtin.live_grep, { desc = "全文検索" })
   end,
 }
