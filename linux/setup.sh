@@ -4,7 +4,17 @@
 # パイプ途中も含めて失敗、未定義変数を検出
 set -euo pipefail
 
+# 配下のファイルの所有者を自分自身に強制的に揃える
+fix_ownership() {
+  local target_path="$1"
+  local target_user="$(id -un)"
+  local target_group="$(id -gn)"
+  find "$target_path" \( ! -user "$target_user" -o ! -group "$target_group" \) \
+    -exec sudo chown "$target_user:$target_group" {} +
+}
+
 # .gitconfig を配置（credential.helper = store が含まれている）
+fix_ownership "$HOME/dotfiles"
 ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
 
 # Docker Engine のインストール
@@ -38,4 +48,5 @@ TARGET_USER="${SUDO_USER:-$USER}"
 sudo usermod -aG docker "$TARGET_USER"
 
 # dotfiles リポジトリの取得・更新
+fix_ownership "$HOME/dotfiles"
 git -C "$HOME/dotfiles" pull --ff-only

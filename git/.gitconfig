@@ -4,7 +4,7 @@
 
 # PATを .git-credentials に保存
 [credential]
-	helper = "!f() { /root/.vscode-server/bin/a5b500951314efd502d07465bd138dfbd714a960/node /tmp/vscode-remote-containers-5ac486f0-2a85-441c-822f-a18c676d222d.js git-credential-helper $*; }; f"
+	helper = "!f() { /root/.vscode-server/bin/a5b500951314efd502d07465bd138dfbd714a960/node /tmp/vscode-remote-containers-df55ccc7-4730-46cc-98a0-5ac4cecdf56f.js git-credential-helper $*; }; f"
 
 # チェックアウト時は改行変換しない、コミット時に CRLF → LF に変換する
 [core]
