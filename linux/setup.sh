@@ -28,28 +28,33 @@ fix_ownership "$SCRIPT_DIR"
 # host の .gitconfig（credential.helper = store が含まれている）は dotfiles の管理対象へ戻す
 ln -sfn "$SCRIPT_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
-# Docker Engine のインストール
-sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# Docker が未インストールの場合だけ、Engine を入れる
+if ! command -v docker >/dev/null 2>&1; then
 
-# WSL 上で Tailscale や AdGuard 等のローカル DNS によるコンテナ内の名前解決失敗を防ぐため、Docker コンテナのアウトバウンド DNS を Google DNS 等に固定する
-# コンテナ内で github からの clone やインストールをするのに必要
-sudo mkdir -p /etc/docker
-sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
+  # Docker Engine のインストール
+  sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
+  sudo install -m 0755 -d /etc/apt/keyrings
+  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --yes --dearmor -o /etc/apt/keyrings/docker.gpg
+  sudo chmod a+r /etc/apt/keyrings/docker.gpg
+  echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  sudo apt-get update && sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+  # WSL 上で Tailscale や AdGuard 等のローカル DNS によるコンテナ内の名前解決失敗を防ぐため、Docker コンテナのアウトバウンド DNS を Google DNS 等に固定する
+  # コンテナ内で github からの clone やインストールをするのに必要
+  sudo mkdir -p /etc/docker
+  sudo tee /etc/docker/daemon.json > /dev/null <<'EOF'
 {
   "dns": ["8.8.8.8", "8.8.4.4"]
 }
 EOF
 
-# 設定反映のため Docker サービスを再起動
-sudo service docker restart || sudo systemctl restart docker
+  # 設定反映のため Docker サービスを再起動
+  sudo service docker restart || sudo systemctl restart docker
+
+fi
 
 # 最新化済み dotfiles から base image を通常 user として build する。
 sudo docker build -t base-image -f "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR"

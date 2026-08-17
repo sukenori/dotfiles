@@ -5,17 +5,16 @@ ENV TZ=Asia/Tokyo
 SHELL ["/bin/bash", "-c"]
 
 # パッケージ一覧の更新、HTTPS 通信の証明書 curl git をインストール
-RUN apt-get update && apt-get install -y ca-certificates curl git
-
-# zsh をインストール
-RUN apt-get update && apt-get install -y zsh
-
-# tmux をインストール
-RUN apt-get update && apt-get install -y tmux
+RUN apt-get update && apt-get install -y \
+      ca-certificates curl git \
+      zsh \
+      tmux \
+      python3-pip
 
 # fzf（あいまい検索）（FZF_VERSION 固定）をインストール
-RUN FZF_VERSION="$(curl -fsSL https://api.github.com/repos/junegunn/fzf/releases/latest | grep -Po '"tag_name": "\\K[^"]*' | sed 's/^v//')" \
- && curl -fsSL -o /tmp/fzf.tar.gz "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" \
+ARG FZF_VERSION=0.65.0
+RUN curl -fsSL -o /tmp/fzf.tar.gz \
+      "https://github.com/junegunn/fzf/releases/download/v${FZF_VERSION}/fzf-${FZF_VERSION}-linux_amd64.tar.gz" \
  && tar -xzf /tmp/fzf.tar.gz -C /tmp fzf \
  && install -m 0755 /tmp/fzf /usr/local/bin/fzf \
  && rm -f /tmp/fzf /tmp/fzf.tar.gz
@@ -35,8 +34,7 @@ RUN curl -fsSL -o /tmp/nvim-linux-x86_64.tar.gz https://github.com/neovim/neovim
  && rm -f /tmp/nvim-linux-x86_64.tar.gz
 
 # neovim-remote（シェルから nvim プロセスを制御するコマンド）をインストール
-RUN apt-get update && apt-get install -y python3-pip \
- && pip3 install --no-cache-dir neovim-remote
+RUN pip3 install --no-cache-dir neovim-remote
 
 # ripgrep（ファイル内キーワード検索、PCRE2 先読み対応版）をインストール
 ARG RIPGREP_VERSION=14.1.1
@@ -45,10 +43,11 @@ RUN curl -fsSL "https://github.com/BurntSushi/ripgrep/releases/download/${RIPGRE
  && install -m 0755 "/tmp/ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl/rg" /usr/local/bin/rg \
  && rm -rf /tmp/rg.tar.gz "/tmp/ripgrep-${RIPGREP_VERSION}-x86_64-unknown-linux-musl"
 
-# Neovim plugin 用の Node.js をインストール
-RUN NODE_MAJOR=$(curl -fsSL https://resolve-node.vercel.app/lts | grep -oP '(?<=v)\d+') \
- && curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
- && apt-get install -y nodejs
+# Neovim plugin 用の Node.js（LTS のメジャーバージョンを固定）をインストール
+ARG NODE_MAJOR=22
+RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
+ && apt-get update && apt-get install -y nodejs \
+ && rm -rf /var/lib/apt/lists/*
 
 # パッケージリストキャッシュの削除
 RUN rm -rf /var/lib/apt/lists/*
