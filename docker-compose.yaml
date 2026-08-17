@@ -1,18 +1,5 @@
 services:
   base-image:
-    build: .
+    build:
+      context: .
     image: base-image
-    container_name: base-image
-
-    entrypoint:
-      - /bin/bash
-      - /root/dotfiles/entrypoint.sh
-
-    volumes:
-      # dotfiles をコンテナ内の /root/dotfiles にマウント
-      - .:/root/dotfiles
-
-    working_dir: /root
-
-    # コンテナを落とさずに維持し続ける
-    command: tail -f /dev/null

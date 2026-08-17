@@ -5,17 +5,28 @@
 set -euo pipefail
 
 # 配下のファイルの所有者を自分自身に強制的に揃える
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+
 fix_ownership() {
   local target_path="$1"
-  local target_user="$(id -un)"
-  local target_group="$(id -gn)"
-  find "$target_path" \( ! -user "$target_user" -o ! -group "$target_group" \) \
+  local target_user
+  local target_group
+
+  target_user="$(id -un)"
+  target_group="$(id -gn)"
+
+  find "$target_path" \
+    \( ! -user "$target_user" -o ! -group "$target_group" \) \
     -exec sudo chown "$target_user:$target_group" {} +
 }
 
-# .gitconfig を配置（credential.helper = store が含まれている）
-fix_ownership "$HOME/dotfiles"
-ln -sf "$HOME/dotfiles/git/.gitconfig" "$HOME/.gitconfig"
+# まず dotfiles の所有権を回復し、最新化する
+fix_ownership "$SCRIPT_DIR"
+git -C "$SCRIPT_DIR" pull --ff-only
+fix_ownership "$SCRIPT_DIR"
+
+# host の .gitconfig（credential.helper = store が含まれている）は dotfiles の管理対象へ戻す
+ln -sfn "$SCRIPT_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
 # Docker Engine のインストール
 sudo apt-get update && sudo apt-get install -y ca-certificates curl gnupg
@@ -40,13 +51,5 @@ EOF
 # 設定反映のため Docker サービスを再起動
 sudo service docker restart || sudo systemctl restart docker
 
-# dotfiles ディレクトリ内にある、基盤となる Dockerfile をビルド
-sudo docker build -t base-image -f "$HOME/dotfiles/Dockerfile" "$HOME/dotfiles"
-
-# Docker を普段 sudo なしで使えるよう、実行ユーザーを docker グループへ追加（反映は次回ログイン以降）
-TARGET_USER="${SUDO_USER:-$USER}"
-sudo usermod -aG docker "$TARGET_USER"
-
-# dotfiles リポジトリの取得・更新
-fix_ownership "$HOME/dotfiles"
-git -C "$HOME/dotfiles" pull --ff-only
+# 最新化済み dotfiles から base image を通常 user として build する。
+sudo docker build -t base-image -f "$SCRIPT_DIR/Dockerfile" "$SCRIPT_DIR"
