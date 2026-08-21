@@ -22,6 +22,8 @@ if [ -n "${LS_COLORS:-}" ]; then
   zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 fi
 
+
+
 # fzf のキーバインドと補完を有効にする
 # 主なキー：
 #   Ctrl-T でファイル/ディレクトリを選んで現在のコマンドラインへ挿入

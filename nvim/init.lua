@@ -24,6 +24,9 @@ require("lazy").setup({
   spec = { { import = "plugins" } },
 })
 
+vim.g.loaded_zipPlugin = 1
+vim.g.loaded_zip = 1
+
 -- OSC52 でクリップボード連携
 local osc52 = require("vim.ui.clipboard.osc52")
 vim.g.clipboard = {
