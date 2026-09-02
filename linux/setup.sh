@@ -28,6 +28,14 @@ fix_ownership "$SCRIPT_DIR"
 # host の .gitconfig（credential.helper = store が含まれている）は dotfiles の管理対象へ戻す
 ln -sfn "$SCRIPT_DIR/git/.gitconfig" "$HOME/.gitconfig"
 
+#WSL 側でコアダンプファイル（core.数字）が作られないようにする
+sudo tee /etc/security/limits.d/99-disable-coredump.conf > /dev/null <<'EOF'
+{
+  soft core 0
+  hard core 0
+}
+EOF
+
 # Docker が未インストールの場合だけ、Engine を入れる
 if ! command -v docker >/dev/null 2>&1; then
 
